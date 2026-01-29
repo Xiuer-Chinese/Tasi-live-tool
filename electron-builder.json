@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
+  "appId": "com.ta1-7.livetool",
+  "asar": true,
+  "directories": {
+    "output": "release/${version}"
+  },
+  "files": ["dist/**/*", "dist-electron/**/*", "electron/platformConfig.js"],
+  "extraMetadata": {
+    "main": "dist-electron/main/index.js"
+  },
+  "electronLanguages": ["zh-CN", "en-US"],
+  "mac": {
+    "artifactName": "TA1.7_${version}_macos_${arch}.${ext}",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ],
+    "icon": "public/favicon.png"
+  },
+  "win": {
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64"]
+      }
+    ],
+    "icon": "public/favicon.ico",
+    "artifactName": "TA1.7_${version}_windows_x64.${ext}"
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true,
+    "deleteAppDataOnUninstall": false,
+    "differentialPackage": true
+  }
+}

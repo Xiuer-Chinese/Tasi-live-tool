@@ -1,0 +1,72 @@
+export interface User {
+  id: string
+  username: string
+  email: string
+  passwordHash: string
+  createdAt: string
+  lastLogin: string | null
+  status: 'active' | 'inactive' | 'banned'
+  licenseType: 'free' | 'trial' | 'premium' | 'enterprise'
+  expiryDate: string | null
+  deviceId: string
+  machineFingerprint: string
+}
+
+export interface AuthToken {
+  token: string
+  userId: string
+  expiresAt: string
+  deviceInfo: string
+  lastUsed: string
+}
+
+export interface UserConfig {
+  id: string
+  userId: string
+  configData: string
+  platform: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AuthState {
+  isAuthenticated: boolean
+  user: User | null
+  token: string | null
+  isLoading: boolean
+  error: string | null
+}
+
+export interface LoginCredentials {
+  username: string
+  password: string
+  rememberMe?: boolean
+}
+
+export interface RegisterData {
+  username: string
+  email: string
+  password: string
+  confirmPassword: string
+}
+
+export interface AuthResponse {
+  success: boolean
+  user?: User
+  token?: string
+  error?: string
+}
+
+export interface Permission {
+  id: string
+  name: string
+  description: string
+  requiredLicense: 'free' | 'trial' | 'premium' | 'enterprise'
+}
+
+export interface FeatureRestriction {
+  feature: string
+  requiresAuth: boolean
+  requiredLicense: 'free' | 'trial' | 'premium' | 'enterprise'
+  message: string
+}

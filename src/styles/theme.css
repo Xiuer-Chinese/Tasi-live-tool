@@ -1,0 +1,110 @@
+/**
+ * UI 规范 v1：全局 theme tokens（极简/苹果感/橙色品牌）
+ * 支持 data-theme="light" | "dark"，禁止组件内写死颜色。
+ */
+
+/* ========== 日间主题（默认） ========== */
+:root,
+[data-theme="light"] {
+  /* P0 四层结构：页面底(app) → Sidebar/Header 独立 → 内容区(content) → 卡片(surface) */
+  --app-bg: hsl(210, 22%, 91%);
+  --header-bg: hsl(0, 0%, 100%);
+  --sidebar-bg: hsl(212, 24%, 84%);
+  --content-bg: hsl(210, 12%, 98%);
+  --surface: hsl(0, 0%, 100%);
+  --surface-muted: hsl(210, 28%, 96%);
+  --border: 214 20% 88%;
+  --text-primary: hsl(222, 30%, 12%);
+  --text-secondary: hsl(222, 25%, 25%);
+  --text-muted: hsl(220, 12%, 40%);
+  --primary: 20 90% 48%;
+  --primary-hover: hsl(20, 90%, 44%);
+  --primary-pressed: hsl(20, 90%, 40%);
+  --on-primary: hsl(0, 0%, 100%);
+  --shadow-card: 0 2px 10px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
+  /* Header 系统栏：独立容器 - 顶部浮起 + 底部压住内容 */
+  --header-top-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  --header-separator: 0 4px 20px rgba(15, 23, 42, 0.12);
+  /* P0 Sidebar / Main 结构分离：导航容器右缘阴影 + 工作区左缘圆角与阴影 */
+  --sidebar-edge-shadow: 2px 0 10px rgba(0, 0, 0, 0.06);
+  --content-edge-shadow: 4px 0 16px rgba(0, 0, 0, 0.05);
+  --divider: transparent;
+  --sidebar-item-hover: rgba(0, 0, 0, 0.05);
+  --sidebar-active-bg: rgba(0, 0, 0, 0.05);
+  /* Header 账号区子容器：相对 Header 有独立背景与可感知边界 */
+  --header-action-bg: hsl(210, 12%, 96%);
+  --header-action-border: rgba(0, 0, 0, 0.06);
+  --header-action-fg: hsl(222, 30%, 12%);
+  --foreground: 222 30% 12%;
+  --muted-foreground: 220 12% 40%;
+  --ring: 20 90% 48%;
+}
+
+/* ========== 夜间主题 ========== */
+[data-theme="dark"] {
+  /* P0 四层结构 + P2 可读性：对比度 ≥ AA，无深灰叠深灰 */
+  --header-bg: hsl(0, 0%, 8%);
+  --sidebar-bg: hsl(0, 0%, 14%);
+  --app-bg: hsl(0, 0%, 17%);
+  --content-bg: hsl(0, 0%, 20%);
+  --surface: hsl(0, 0%, 23%);
+  --surface-muted: hsl(0, 0%, 21%);
+  --border: 0 0% 30%;
+  --text-primary: hsl(0, 0%, 97%);
+  --text-secondary: hsl(0, 0%, 88%);
+  --text-muted: hsl(0, 0%, 68%);
+  --primary: 24 65% 55%;
+  --primary-hover: hsl(24, 65%, 50%);
+  --primary-pressed: hsl(24, 65%, 46%);
+  --on-primary: hsl(0, 0%, 10%);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.22);
+  /* Header 系统栏：独立容器 - 顶部浮起 + 底部压住内容 */
+  --header-top-shadow: 0 -2px 12px rgba(0, 0, 0, 0.3);
+  --header-separator: 0 4px 18px rgba(0, 0, 0, 0.4);
+  /* P0 Sidebar / Main 结构分离：导航容器右缘阴影 + 工作区左缘圆角与阴影 */
+  --sidebar-edge-shadow: 2px 0 12px rgba(0, 0, 0, 0.35);
+  --content-edge-shadow: 4px 0 18px rgba(0, 0, 0, 0.28);
+  --divider: transparent;
+  --sidebar-item-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-active-bg: hsl(0, 0%, 20%);
+  /* P2 Header 账号区子容器：相对 Header 提升明度 6–10%，边界与文字可读 */
+  --header-action-bg: hsl(0, 0%, 16%);
+  --header-action-border: rgba(255, 255, 255, 0.07);
+  --header-action-fg: hsl(0, 0%, 95%);
+  --header-action-select-chevron-opacity: 0.9;
+
+  /* Tailwind 共用变量（与上方 token 一致） */
+  --background: 0 0% 18%;
+  --foreground: 0 0% 96%;
+  --card: 0 0% 24%;
+  --card-foreground: 0 0% 96%;
+  --popover: 0 0% 24%;
+  --popover-foreground: 0 0% 96%;
+  --primary-foreground: 0 0% 12%;
+  --secondary: 0 0% 24%;
+  --secondary-foreground: 0 0% 96%;
+  --muted: 0 0% 22%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 0 0% 24%;
+  --accent-foreground: 0 0% 96%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 96%;
+  --input: 0 0% 28%;
+  --ring: 24 65% 55%;
+  --sidebar-background: 0 0% 14%;
+  --sidebar-foreground: 0 0% 96%;
+  --sidebar-primary: 24 65% 55%;
+  --sidebar-primary-foreground: 0 0% 12%;
+  --sidebar-accent: 0 0% 20%;
+  --sidebar-accent-foreground: 0 0% 96%;
+  --sidebar-border: 0 0% 22%;
+  --sidebar-ring: 24 65% 55%;
+}
+
+/* Dark 下账号区 Select：文字与下拉箭头高对比（WCAG AA） */
+[data-theme="dark"] .header-account-area [data-slot="select-trigger"] {
+  color: var(--header-action-fg);
+}
+[data-theme="dark"] .header-account-area [data-slot="select-trigger"] svg {
+  opacity: var(--header-action-select-chevron-opacity);
+}
