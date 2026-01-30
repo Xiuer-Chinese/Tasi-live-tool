@@ -48,6 +48,10 @@ export const SELECTORS = {
     POPUP_BUTTON: '.promoting-wrap .action-link span[class*="promoting"]',
     ID: 'input + span',
   },
+  /** 评论输入框（与 commentInput 同义，供 isLive 等使用） */
+  COMMENT: {
+    TEXTAREA: '.live-message-input-container textarea',
+  },
   commentInput: {
     TEXTAREA: '.live-message-input-container textarea',
     SUBMIT_BUTTON: '.live-message-input-container button',

@@ -4,11 +4,12 @@
 
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { useAutoReplyStore } from '@/hooks/useAutoReply'
-import { useAutoReplyConfig } from '@/hooks/useAutoReplyConfig'
+import { createDefaultConfig, useAutoReplyConfigStore } from '@/hooks/useAutoReplyConfig'
 import { BaseTask, type StopReason, type TaskContext } from './types'
 
 export class AutoReplyTask extends BaseTask {
   private accountId: string | null = null
+  private listenerCleanup: (() => void) | null = null
 
   constructor() {
     super('autoReply')
@@ -16,7 +17,8 @@ export class AutoReplyTask extends BaseTask {
 
   async start(ctx: TaskContext): Promise<void> {
     this.accountId = ctx.accountId
-    const config = useAutoReplyConfig.getState().config
+    const config =
+      useAutoReplyConfigStore.getState().contexts[ctx.accountId]?.config ?? createDefaultConfig()
 
     // 更新状态为 waiting
     useAutoReplyStore.getState().setIsListening(ctx.accountId, 'waiting')
@@ -46,15 +48,11 @@ export class AutoReplyTask extends BaseTask {
 
       // 监听后端停止事件
       if (window.ipcRenderer) {
-        window.ipcRenderer.on(IPC_CHANNELS.tasks.autoReply.listenerStopped, handleListenerStopped)
-        this.registerDisposable(() => {
-          if (window.ipcRenderer) {
-            window.ipcRenderer.removeListener(
-              IPC_CHANNELS.tasks.autoReply.listenerStopped,
-              handleListenerStopped,
-            )
-          }
-        })
+        const unsubscribe = window.ipcRenderer.on(
+          IPC_CHANNELS.tasks.autoReply.listenerStopped,
+          handleListenerStopped,
+        )
+        this.registerDisposable(() => unsubscribe())
       }
 
       // 更新状态为 listening

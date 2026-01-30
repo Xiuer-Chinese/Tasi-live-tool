@@ -1,7 +1,17 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { MockAuthService } from '../services/MockAuthService'
-import type { AuthState, LoginCredentials, RegisterData, User } from '../types/auth'
+import type {
+  AuthResponse,
+  AuthState,
+  LoginCredentials,
+  RegisterData,
+  SafeUser,
+} from '../types/auth'
+
+/** authAPI 可能返回的 Mock 标记（用于降级到 MockAuthService） */
+type LoginResponseWithMock = AuthResponse & { __useMock?: boolean; data?: LoginCredentials }
+type RegisterResponseWithMock = AuthResponse & { __useMock?: boolean; data?: RegisterData }
 
 interface AuthStore extends AuthState {
   // Actions
@@ -9,7 +19,7 @@ interface AuthStore extends AuthState {
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   checkAuth: () => Promise<void>
-  setUser: (user: User | null) => void
+  setUser: (user: SafeUser | null) => void
   setToken: (token: string | null) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
@@ -31,12 +41,14 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null })
 
         try {
-          let response = await window.authAPI.login(credentials)
+          let response = (await window.authAPI.login(credentials)) as LoginResponseWithMock
 
           // 如果返回 __useMock 标记，使用 MockAuthService
           if (response?.__useMock) {
             console.log('[AuthStore] Using MockAuthService for login')
-            response = await MockAuthService.login(response.data || credentials)
+            response = (await MockAuthService.login(
+              response.data || credentials,
+            )) as LoginResponseWithMock
           }
 
           if (response.success && response.user && response.token) {
@@ -80,8 +92,9 @@ export const useAuthStore = create<AuthStore>()(
         // 【步骤B】统一错误处理：准备错误信息提取函数
         const extractErrorMessage = (error: unknown, defaultMessage: string): string => {
           // 如果是 AuthResponse 格式的错误
-          if (error?.error) {
-            return error.error
+          const err = error as { error?: string } | null | undefined
+          if (err?.error) {
+            return err.error
           }
           // 如果是 Error 对象
           if (error instanceof Error) {
@@ -104,12 +117,14 @@ export const useAuthStore = create<AuthStore>()(
           }
           console.log(`[AuthStore] Register request [${requestId}]:`, payloadForLog)
 
-          let response = await window.authAPI.register(data)
+          let response = (await window.authAPI.register(data)) as RegisterResponseWithMock
 
           // 如果返回 __useMock 标记，使用 MockAuthService
           if (response?.__useMock) {
             console.log(`[AuthStore] Using MockAuthService for registration [${requestId}]`)
-            response = await MockAuthService.register(response.data || data)
+            response = (await MockAuthService.register(
+              response.data || data,
+            )) as RegisterResponseWithMock
           }
 
           // 【步骤B】记录响应信息
@@ -194,9 +209,9 @@ export const useAuthStore = create<AuthStore>()(
 
         try {
           if (token) {
-            const result = await window.authAPI.logout(token)
+            const result = (await window.authAPI.logout(token)) as boolean | { __useMock?: boolean }
             // 如果返回 __useMock 标记，使用 MockAuthService
-            if (result?.__useMock) {
+            if (typeof result === 'object' && result?.__useMock) {
               MockAuthService.logout(token)
             }
           }
@@ -225,16 +240,19 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true })
 
         try {
-          let user = await window.authAPI.getCurrentUser(token)
+          let user = (await window.authAPI.getCurrentUser(token)) as
+            | SafeUser
+            | null
+            | (SafeUser & { __useMock?: boolean })
           // 如果返回 __useMock 标记，使用 MockAuthService
-          if (user?.__useMock) {
+          if (user && typeof user === 'object' && '__useMock' in user && user.__useMock) {
             user = MockAuthService.getCurrentUser(token)
           }
 
-          if (user) {
+          if (user && !('__useMock' in user)) {
             set({
               isAuthenticated: true,
-              user,
+              user: user as SafeUser,
               isLoading: false,
               error: null,
             })
@@ -261,7 +279,7 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       // Set user
-      setUser: (user: User | null) => set({ user }),
+      setUser: (user: SafeUser | null) => set({ user }),
 
       // Set token
       setToken: (token: string | null) => set({ token }),

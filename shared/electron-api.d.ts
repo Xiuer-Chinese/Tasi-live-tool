@@ -12,7 +12,7 @@ export interface IpcChannels {
     storageState?: string
     platform: LiveControlPlatform
     account: Account
-  }) => boolean
+  }) => Promise<{ success: boolean; browserLaunched: boolean; error?: string }>
   [IPC_CHANNELS.tasks.liveControl.disconnect]: (accountId: string) => boolean
   [IPC_CHANNELS.tasks.liveControl.disconnectedEvent]: (id: string) => void
   [IPC_CHANNELS.tasks.liveControl.notifyAccountName]: (
@@ -23,6 +23,10 @@ export interface IpcChannels {
           accountName: string | null
         }
       | { ok: false },
+  ) => void
+  [IPC_CHANNELS.tasks.liveControl.streamStateChanged]: (
+    accountId: string,
+    streamState: import('shared/streamStatus').StreamStatus,
   ) => void
 
   // AutoMessage

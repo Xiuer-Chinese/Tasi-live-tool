@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import type { StreamStatus } from 'shared/types'
+import type { StreamStatus } from 'shared/streamStatus'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { immer } from 'zustand/middleware/immer'

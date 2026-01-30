@@ -71,10 +71,11 @@ export class XiaohongshuPlatform
       if (!this.mainPage) {
         return false
       }
+      const commentTextareaSelector = elementFinder.commentInput?.TEXTAREA
+      const commentTextarea = commentTextareaSelector
+        ? await this.mainPage.$(commentTextareaSelector).catch(() => null)
+        : null
       // 小红书：检测评论输入框是否存在且可用
-      const commentTextarea = await this.mainPage
-        .$(elementFinder.commentInput.TEXTAREA)
-        .catch(() => null)
       if (commentTextarea) {
         const isDisabled = await commentTextarea.isDisabled().catch(() => true)
         return !isDisabled

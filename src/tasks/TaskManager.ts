@@ -5,7 +5,8 @@
 
 import { useLiveControlStore } from '@/hooks/useLiveControl'
 import { gateCanRun } from './gateCheck'
-import type { BaseTask, StopReason, Task, TaskContext, TaskId, TaskStatus } from './types'
+import type { StopReason, Task, TaskContext, TaskId, TaskStatus } from './types'
+import { BaseTask } from './types'
 
 /**
  * TaskManager 单例

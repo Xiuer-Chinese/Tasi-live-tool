@@ -56,7 +56,7 @@ export type AutoReplyConfig = AutoReplyBaseConfig & CompassExtraConfig & WechatC
 const defaultPrompt =
   '你是一个直播间的助手，负责回复观众的评论。请用简短友好的语气回复，不要超过50个字。'
 
-const createDefaultConfig = (): AutoReplyConfig => {
+export const createDefaultConfig = (): AutoReplyConfig => {
   return {
     entry: 'control',
     hideUsername: false,

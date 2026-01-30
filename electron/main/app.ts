@@ -8,6 +8,7 @@ import {
   dialog,
   ipcMain,
   Menu,
+  type NativeImage,
   Notification,
   nativeImage,
   shell,
@@ -16,7 +17,7 @@ import {
 import { updateManager } from './managers/UpdateManager'
 import windowManager from './windowManager'
 import './ipc'
-import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { createLogger } from './logger'
 
 // const _require = createRequire(import.meta.url)
@@ -90,6 +91,13 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0)
 }
 
+const TASI_DEBUG_PATH = path.join(process.env.TEMP ?? os.tmpdir(), 'tasi-window-debug.txt')
+function logWindowDebug(phase: string, w: BrowserWindow | null = win): void {
+  const ts = new Date().toISOString()
+  const line = `${ts} pid=${process.pid} ${phase} mainWindow=${!!w} visible=${w ? w.isVisible() : false} minimized=${w ? w.isMinimized() : false}\n`
+  appendFileSync(TASI_DEBUG_PATH, line)
+}
+
 let win: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
@@ -125,10 +133,12 @@ function setConfig(config: { hideToTrayTipDismissed: boolean }) {
 }
 
 async function createWindow() {
+  logWindowDebug('createWindow called')
   win = new BrowserWindow({
     title: `她似-Live-Supertool - v${app.getVersion()}`,
     width: 1280,
     height: 800,
+    show: false,
     autoHideMenuBar: app.isPackaged,
     icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
     webPreferences: {
@@ -140,6 +150,11 @@ async function createWindow() {
       // Enable webSecurity for production
       webSecurity: app.isPackaged,
     },
+  })
+
+  win.once('ready-to-show', () => {
+    logWindowDebug('ready-to-show')
+    win?.show()
   })
 
   // 确保窗口显示时任务栏可见
@@ -166,6 +181,10 @@ async function createWindow() {
     if (url.startsWith('https:')) shell.openExternal(url)
     return { action: 'deny' }
   })
+
+  setTimeout(() => {
+    if (win && !win.isVisible()) win.show()
+  }, 1500)
 
   // 拦截窗口关闭事件，改为隐藏到托盘
   win.on('close', e => {
@@ -204,10 +223,12 @@ async function createWindow() {
   })
 }
 
+logWindowDebug('before whenReady')
 app
   .whenReady()
   .then(logStartupInfo)
   .then(() => {
+    logWindowDebug('after whenReady')
     createWindow()
     createTray()
   })
@@ -224,12 +245,15 @@ app.on('window-all-closed', async () => {
 })
 
 app.on('second-instance', () => {
+  logWindowDebug('second-instance triggered')
   if (win) {
-    // Focus on the main window if the user tried to open another
     if (win.isMinimized()) win.restore()
     win.show()
-    win.setSkipTaskbar(false) // 恢复任务栏显示
+    win.setSkipTaskbar(false)
     win.focus()
+  } else {
+    createLogger('app').info('second-instance: mainWindow not created yet, ensuring createWindow')
+    app.whenReady().then(() => createWindow())
   }
 })
 
@@ -242,7 +266,18 @@ app.on('activate', () => {
   }
 })
 
+const TASI_CRASH_PATH = path.join(process.env.TEMP ?? os.tmpdir(), 'tasi-crash.txt')
+function writeCrashToTemp(tag: string, err: unknown): void {
+  try {
+    const ts = new Date().toISOString()
+    const stack = err instanceof Error ? err.stack : String(err)
+    const msg = err instanceof Error ? err.message : String(err)
+    appendFileSync(TASI_CRASH_PATH, `\n[${ts}] ${tag}\n${msg}\n${stack}\n`)
+  } catch (_) {}
+}
+
 process.on('uncaughtException', error => {
+  writeCrashToTemp('uncaughtException', error)
   const logger = createLogger('uncaughtException')
   logger.error('--------------意外的未捕获异常---------------')
   logger.error(error)
@@ -254,14 +289,14 @@ process.on('uncaughtException', error => {
 process.on('unhandledRejection', reason => {
   // playwright-extra 插件问题：在 browser.close() 时概率触发
   // https://github.com/berstend/puppeteer-extra/issues/858
-  const logger = createLogger('unhandledRejection')
   if (
     reason instanceof Error &&
     reason.message.includes('cdpSession.send: Target page, context or browser has been closed')
   ) {
-    return logger.verbose(reason)
+    return createLogger('unhandledRejection').verbose(reason)
   }
-
+  writeCrashToTemp('unhandledRejection', reason)
+  const logger = createLogger('unhandledRejection')
   logger.error('--------------未被处理的错误---------------')
   logger.error(reason)
   logger.error('-------------------------------------------')
@@ -271,7 +306,7 @@ process.on('unhandledRejection', reason => {
 function createTray() {
   // 使用应用图标作为托盘图标
   const iconPath = path.join(process.env.VITE_PUBLIC, 'favicon.ico')
-  let trayIcon: nativeImage
+  let trayIcon: NativeImage
 
   try {
     trayIcon = nativeImage.createFromPath(iconPath)

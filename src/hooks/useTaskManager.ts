@@ -4,6 +4,7 @@
  */
 
 import { useMemoizedFn } from 'ahooks'
+import type { IpcChannels } from 'shared/electron-api'
 import { taskManager } from '@/tasks'
 import type { StopReason, TaskContext, TaskId } from '@/tasks/types'
 import { getStopReasonText } from '@/utils/taskGate'
@@ -38,7 +39,11 @@ export function useTaskManager() {
         if (!window.ipcRenderer) {
           throw new Error('IPC renderer not available')
         }
-        return window.ipcRenderer.invoke(channel, ...args)
+        // 运行时 channel/args 由 TaskContext 调用方保证与 IpcChannels 一致，此处断言以通过严格参数元组检查
+        return window.ipcRenderer.invoke(
+          channel as keyof IpcChannels,
+          ...(args as any),
+        ) as Promise<T>
       },
     }
   })

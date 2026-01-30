@@ -8,7 +8,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import type { AuthResponse, LoginCredentials, RegisterData, User } from '@/types/auth'
+import type { AuthResponse, LoginCredentials, RegisterData, SafeUser, User } from '@/types/auth'
 
 const STORAGE_KEY_USERS = 'mock_auth_users'
 const STORAGE_KEY_TOKENS = 'mock_auth_tokens'
@@ -197,7 +197,7 @@ export class MockAuthService {
 
       return {
         success: true,
-        user: userWithoutPassword as Omit<User, 'passwordHash'>,
+        user: userWithoutPassword as SafeUser,
         token,
       }
     } catch (error) {
@@ -256,7 +256,7 @@ export class MockAuthService {
 
       return {
         success: true,
-        user: userWithoutPassword as Omit<User, 'passwordHash'>,
+        user: userWithoutPassword as SafeUser,
         token,
       }
     } catch (error) {
@@ -268,7 +268,7 @@ export class MockAuthService {
   /**
    * 验证 token
    */
-  static validateToken(token: string): User | null {
+  static validateToken(token: string): SafeUser | null {
     try {
       const tokens = getTokens()
       const tokenData = tokens.find(t => t.token === token)
@@ -299,7 +299,7 @@ export class MockAuthService {
 
       // 返回用户信息（不包含密码）
       const { passwordHash: _, ...userWithoutPassword } = user
-      return userWithoutPassword as Omit<User, 'passwordHash'>
+      return userWithoutPassword as SafeUser
     } catch (error) {
       console.error('[MockAuthService] Token validation error:', error)
       return null
@@ -309,7 +309,7 @@ export class MockAuthService {
   /**
    * 获取当前用户
    */
-  static getCurrentUser(token: string): User | null {
+  static getCurrentUser(token: string): SafeUser | null {
     return MockAuthService.validateToken(token)
   }
 

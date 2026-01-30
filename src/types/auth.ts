@@ -31,7 +31,7 @@ export interface UserConfig {
 
 export interface AuthState {
   isAuthenticated: boolean
-  user: User | null
+  user: SafeUser | null
   token: string | null
   isLoading: boolean
   error: string | null
@@ -50,9 +50,12 @@ export interface RegisterData {
   confirmPassword: string
 }
 
+/** 前端展示用用户类型（不含密码哈希） */
+export type SafeUser = Omit<User, 'passwordHash'>
+
 export interface AuthResponse {
   success: boolean
-  user?: User
+  user?: SafeUser
   token?: string
   error?: string
 }

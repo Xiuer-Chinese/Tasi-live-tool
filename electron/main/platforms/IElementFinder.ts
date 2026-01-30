@@ -7,6 +7,9 @@ import {
 } from '#/errors/PlatformError'
 
 export interface IElementFinder {
+  /** 评论输入框相关选择器（用于 isLive 等检测） */
+  commentInput?: { TEXTAREA: string; SUBMIT_BUTTON?: string }
+
   /** 从单个商品详情中获取弹窗按钮 */
   getPopUpButtonFromGoodsItem(
     item: ElementHandle<SVGElement | HTMLElement>,

@@ -4,7 +4,7 @@
  */
 
 import { IPC_CHANNELS } from 'shared/ipcChannels'
-import type { StreamStatus } from 'shared/types'
+import type { StreamStatus } from 'shared/streamStatus'
 import type { ScopedLogger } from '#/logger'
 import type { BrowserSession } from '#/managers/BrowserSessionManager'
 import type { IPlatform } from '#/platforms/IPlatform'

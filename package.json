@@ -1,9 +1,10 @@
 {
   "name": "ta1-7",
   "type": "commonjs",
-  "version": "1.7.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "TA1.7 - 专业直播助手工具",
+  "description": "TASI-live-Supertool - 专业直播助手工具",
+  "productName": "TASI-live-Supertool",
   "author": "Live Studio Team",
   "license": "MIT",
   "main": "dist-electron/main/index.js",
@@ -14,14 +15,18 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && node -e \"const fs=require('fs'); const p='dist-electron/main/runtime'; fs.mkdirSync(p,{recursive:true}); fs.copyFileSync('electron/main/runtime/load-playwright.cjs', p+'/load-playwright.cjs'); if(!fs.existsSync(p+'/load-playwright.cjs')){console.error('FATAL: dist-electron/main/runtime/load-playwright.cjs not found after build'); process.exit(1)}\"",
     "build-exe": "npm run build && electron-builder --publish never",
+    "dist:clean": "node -e \"require('fs').rmSync('release',{recursive:true,force:true})\"",
+    "dist:check": "node scripts/dist-check-appdir.js",
+    "dist": "npm run dist:clean && npm run build && npm run dist:check && electron-builder --win --publish never",
     "preview": "vite preview",
     "pretest": "vite build --mode=test",
     "test": "vitest run",
     "prepare": "husky",
     "bump": "bumpp --no-commit --no-tag --no-push && changelogen --output",
     "release": "node ./scripts/release",
+    "diag:deps": "node scripts/diagnose-deps.mjs",
     "slow-server": "node ./scripts/slow-server.js"
   },
   "dependencies": {
@@ -31,6 +36,7 @@
     "jsonwebtoken": "^9.0.2",
     "playwright": "^1.50.0",
     "playwright-extra": "^4.3.6",
+    "playwright-extra-plugin-stealth": "^0.0.1",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "uuid": "^9.0.1"
   },
@@ -71,6 +77,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@welldone-software/why-did-you-render": "10.0.1",
     "ahooks": "^3.8.4",
+    "asar": "^3.2.0",
     "builder-util-runtime": "^9.2.10",
     "bumpp": "^10.0.1",
     "changelogen": "^0.6.1",

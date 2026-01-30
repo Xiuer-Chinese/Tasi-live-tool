@@ -5,6 +5,8 @@ import { commonElementFinder, type IElementFinder } from './../IElementFinder'
 import { SELECTORS } from './constant'
 
 export const douyinEosElementFinder: IElementFinder = {
+  commentInput: SELECTORS.commentInput,
+
   async getPinTopLabel() {
     return commonElementFinder.getEmptyPinTopLabel()
   },

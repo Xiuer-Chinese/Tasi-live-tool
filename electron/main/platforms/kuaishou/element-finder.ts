@@ -5,6 +5,8 @@ import { commonElementFinder, type IElementFinder } from '../IElementFinder'
 import { SELECTORS } from './constant'
 
 export const kuaishouElementFinder: IElementFinder = {
+  commentInput: SELECTORS.commentInput,
+
   async getPopUpButtonFromGoodsItem(item: ElementHandle<SVGElement | HTMLElement>) {
     const button = await item.$(SELECTORS.goodsItem.POPUP_BUTTON)
     if (!button) {

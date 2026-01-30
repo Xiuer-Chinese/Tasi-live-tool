@@ -9,6 +9,8 @@ import { commonElementFinder, type IElementFinder } from '../IElementFinder'
 import { SELECTORS } from './constant'
 
 export const taobaoElementFinder: IElementFinder = {
+  commentInput: SELECTORS.commentInput,
+
   async getPopUpButtonFromGoodsItem(item: ElementHandle<SVGElement | HTMLElement>) {
     const button = await item.$(SELECTORS.goodsItem.POPUP_BUTTON)
     if (!button) {

@@ -1,17 +1,34 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.ta1-7.livetool",
+  "appId": "com.tasi.livesupertool",
+  "productName": "TASI-live-Supertool",
   "asar": true,
+  "asarUnpack": [
+    "node_modules/better-sqlite3/**",
+    "node_modules/playwright/**",
+    "node_modules/playwright-extra/**",
+    "node_modules/playwright-extra-plugin-stealth/**",
+    "node_modules/puppeteer-extra-plugin-stealth/**"
+  ],
   "directories": {
+    "app": ".",
     "output": "release/${version}"
   },
-  "files": ["dist/**/*", "dist-electron/**/*", "electron/platformConfig.js"],
+  "files": [
+    "dist/**/*",
+    "dist-electron/**/*",
+    "dist-electron/main/runtime/**",
+    "electron/platformConfig.js",
+    "package.json"
+  ],
+  "afterPack": "scripts/electron-after-pack.js",
+
   "extraMetadata": {
     "main": "dist-electron/main/index.js"
   },
   "electronLanguages": ["zh-CN", "en-US"],
   "mac": {
-    "artifactName": "TA1.7_${version}_macos_${arch}.${ext}",
+    "artifactName": "TASI-live-Supertool_${version}_macos_${arch}.${ext}",
     "target": [
       {
         "target": "dmg",
@@ -21,14 +38,9 @@
     "icon": "public/favicon.png"
   },
   "win": {
-    "target": [
-      {
-        "target": "nsis",
-        "arch": ["x64"]
-      }
-    ],
+    "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }],
     "icon": "public/favicon.ico",
-    "artifactName": "TA1.7_${version}_windows_x64.${ext}"
+    "artifactName": "TASI-live-Supertool_V1.0_win-x64.${ext}"
   },
   "nsis": {
     "oneClick": false,

@@ -58,10 +58,10 @@ export class KuaishouPlatform implements IPlatform, IPerformPopup, IPerformComme
       if (!this.mainPage) {
         return false
       }
-      // 快手：检测评论输入框是否存在且可用
-      const commentTextarea = await this.mainPage
-        .$(elementFinder.commentInput.TEXTAREA)
-        .catch(() => null)
+      const commentTextareaSelector = elementFinder.commentInput?.TEXTAREA
+      const commentTextarea = commentTextareaSelector
+        ? await this.mainPage.$(commentTextareaSelector).catch(() => null)
+        : null
       if (commentTextarea) {
         const isDisabled = await commentTextarea.isDisabled().catch(() => true)
         return !isDisabled

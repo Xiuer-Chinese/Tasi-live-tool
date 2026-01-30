@@ -145,7 +145,7 @@ const ConnectToLiveControl = React.memo(() => {
             session: null,
             lastVerifiedAt: null,
           })
-          toast.warning('连接已失效，请重新连接')
+          toast.error('连接已失效，请重新连接')
         }
       }, 1000) // 1秒延迟，给 connectLiveControl 创建 timeout 的时间
 
@@ -198,7 +198,7 @@ const ConnectToLiveControl = React.memo(() => {
         // 浏览器启动失败是非致命错误，只显示警告，不改变状态
         if (result && !result.browserLaunched) {
           console.warn('[State Machine] Browser launch warning (non-fatal):', result.error)
-          toast.warning(result.error || '启动浏览器时出现问题，但连接流程将继续')
+          toast.error(result.error || '启动浏览器时出现问题，但连接流程将继续')
           // 保持 connecting 状态，等待登录成功事件
           // 仍然设置超时，因为可能浏览器实际上已经打开了
           loginTimeoutRef.current = setTimeout(() => {
@@ -241,7 +241,7 @@ const ConnectToLiveControl = React.memo(() => {
         // 普通错误保持 connecting 状态，等待登录成功
         const errorMessage = error instanceof Error ? error.message : '连接失败'
         console.log('[State Machine] Connection error (non-fatal warning):', errorMessage)
-        toast.warning(`${errorMessage}，但连接流程将继续`)
+        toast.error(`${errorMessage}，但连接流程将继续`)
         // 不改变状态，保持 connecting，等待登录成功事件
         // 仍然设置超时
         loginTimeoutRef.current = setTimeout(() => {

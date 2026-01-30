@@ -43,15 +43,11 @@ export class AutoPopupTask extends BaseTask {
       }
 
       if (window.ipcRenderer) {
-        window.ipcRenderer.on(IPC_CHANNELS.tasks.autoPopUp.stoppedEvent, handleStopped)
-        this.registerDisposable(() => {
-          if (window.ipcRenderer) {
-            window.ipcRenderer.removeListener(
-              IPC_CHANNELS.tasks.autoPopUp.stoppedEvent,
-              handleStopped,
-            )
-          }
-        })
+        const unsubscribe = window.ipcRenderer.on(
+          IPC_CHANNELS.tasks.autoPopUp.stoppedEvent,
+          handleStopped,
+        )
+        this.registerDisposable(() => unsubscribe())
       }
 
       // 更新状态

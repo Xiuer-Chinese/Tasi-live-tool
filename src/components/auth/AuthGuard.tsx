@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react'
 import { AuthDialog } from '@/components/auth/AuthDialog'
 import { useAuthStore } from '@/stores/authStore'
+import type { SafeUser } from '@/types/auth'
 
 interface AuthGuardProps {
   children: ReactNode
@@ -121,11 +122,16 @@ export function useFeatureAccess() {
     canAccess: boolean
     requiresAuth: boolean
     requiredLicense: string
-    user: User | null
+    user: SafeUser | null
   }> => {
     try {
       const response = await window.authAPI.checkFeatureAccess(token || '', feature)
-      return response
+      return response as {
+        canAccess: boolean
+        requiresAuth: boolean
+        requiredLicense: string
+        user: SafeUser | null
+      }
     } catch (error) {
       console.error('Feature access check failed:', error)
       return {

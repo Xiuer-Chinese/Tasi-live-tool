@@ -332,7 +332,6 @@ export function useAutoReply() {
   const store = useAutoReplyStore()
   const { currentAccountId } = useAccounts()
   const accountName = useCurrentLiveControl(ctx => ctx.accountName)
-  const liveControlStore = useLiveControlStore()
   const aiStore = useAIChatStore()
   const { config } = useAutoReplyConfig()
   const { handleError } = useErrorHandler()
@@ -356,7 +355,7 @@ export function useAutoReply() {
 
     // 检查前置条件：如果连接已断开，停止处理评论
     // 获取对应账号的连接状态
-    const liveControlState = liveControlStore.getState()
+    const liveControlState = useLiveControlStore.getState()
     const accountConnectState = liveControlState.contexts[accountId]?.connectState
     if (!accountConnectState || accountConnectState.status !== 'connected') {
       console.log(

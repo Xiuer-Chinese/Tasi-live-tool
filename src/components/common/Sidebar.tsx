@@ -69,7 +69,7 @@ export default function Sidebar() {
 
   const filteredTabs = tabs.filter(tab => {
     if (tab.platform) {
-      return tab.platform.includes(platform)
+      return platform != null && tab.platform.includes(platform)
     }
     return true
   })

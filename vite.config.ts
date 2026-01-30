@@ -7,6 +7,8 @@ import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron/simple'
 import pkg from './package.json'
 
+console.log('>>> USING VITE CONFIG:', __filename)
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
   rmSync('dist-electron', { recursive: true, force: true })
@@ -18,7 +20,7 @@ export default defineConfig(({ command }) => {
   return {
     base: isBuild ? './' : '/',
     build: {
-      sourcemap: sourcemap, // 启用 sourcemap 以便在 DevTools 中定位到 src 文件
+      sourcemap,
     },
     resolve: {
       alias: {
@@ -34,7 +36,7 @@ export default defineConfig(({ command }) => {
           entry: 'electron/main/index.ts',
           onstart(args) {
             if (process.env.VSCODE_DEBUG) {
-              console.log(/* For `.vscode/.debug.script.mjs` */ '[startup] Electron App')
+              console.log('[startup] Electron App')
             } else {
               args.startup()
             }
@@ -42,15 +44,18 @@ export default defineConfig(({ command }) => {
           vite: {
             build: {
               sourcemap: true,
-              minify: false, // 开启前后差距大概 100kb
+              minify: false,
               outDir: 'dist-electron/main',
               rollupOptions: {
                 external: [
-                  // 将 ws 移入 devDependencies 后启动报错，需要排除下面两个包
-                  // (ws 移回 dependencies 虽然正常不报错，但是安装后启动也会报错)
+                  'playwright',
+                  'playwright-extra',
+                  'playwright-extra-plugin-stealth',
+                  'puppeteer-extra-plugin-stealth',
                   'bufferutil',
                   'utf-8-validate',
-                  ...Object.keys('dependencies' in pkg ? pkg.dependencies : {}),
+                  'better-sqlite3',
+                  'electron-updater',
                 ],
               },
             },
@@ -63,16 +68,23 @@ export default defineConfig(({ command }) => {
           },
         },
         preload: {
-          // Shortcut of `build.rollupOptions.input`.
-          // Preload scripts may contain Web assets, so use the `build.rollupOptions.input` instead `build.lib.entry`.
           input: 'electron/preload/index.ts',
           vite: {
             build: {
-              sourcemap: sourcemap ? 'inline' : undefined, // #332
+              sourcemap: sourcemap ? 'inline' : undefined,
               minify: isBuild,
               outDir: 'dist-electron/preload',
               rollupOptions: {
-                external: [...Object.keys('dependencies' in pkg ? pkg.dependencies : {})],
+                external: [
+                  'playwright',
+                  'playwright-extra',
+                  'playwright-extra-plugin-stealth',
+                  'puppeteer-extra-plugin-stealth',
+                  'bufferutil',
+                  'utf-8-validate',
+                  'better-sqlite3',
+                  'electron-updater',
+                ],
               },
             },
             resolve: {

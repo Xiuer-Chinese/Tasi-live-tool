@@ -89,12 +89,13 @@ export class TaobaoPlatform implements IPlatform, IPerformPopup, IPerformComment
       if (!this.mainPage) {
         return false
       }
+      const commentTextareaSelector = elementFinder.commentInput?.TEXTAREA
+      const commentTextarea = commentTextareaSelector
+        ? await this.mainPage.$(commentTextareaSelector).catch(() => null)
+        : null
       // 淘宝：如果能访问中控台页面，说明正在直播
       // 因为 connect() 中已经检查过，找不到 liveId 会抛出错误
       // 进一步检查：评论输入框是否存在
-      const commentTextarea = await this.mainPage
-        .$(elementFinder.commentInput.TEXTAREA)
-        .catch(() => null)
       return commentTextarea !== null
     } catch (_error) {
       return false

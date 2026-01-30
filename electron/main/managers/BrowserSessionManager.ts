@@ -1,7 +1,10 @@
+import path from 'node:path'
 import type playwright from 'playwright'
-import { chromium } from 'playwright-extra'
-import stealth from 'puppeteer-extra-plugin-stealth'
 import { findChromium } from '#/utils/checkChrome'
+
+const { chromium } = require(path.join(__dirname, 'runtime', 'load-playwright.cjs')) as {
+  chromium: typeof import('playwright').chromium
+}
 
 export interface BrowserSession {
   browser: playwright.Browser
@@ -15,8 +18,6 @@ export interface BrowserConfig {
 }
 
 export type StorageState = playwright.BrowserContextOptions['storageState']
-
-chromium.use(stealth())
 
 class BrowserSessionManager {
   private chromePath: string | null = null
@@ -33,10 +34,10 @@ class BrowserSessionManager {
   }
 
   private async createBrowser(headless = true) {
-    const path = await this.getChromePathOrDefault()
+    const execPath = await this.getChromePathOrDefault()
     return chromium.launch({
       headless,
-      executablePath: path,
+      executablePath: execPath,
     })
   }
 

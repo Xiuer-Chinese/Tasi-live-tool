@@ -3,7 +3,7 @@
  * 用于 TaskManager 中判断是否可以启动任务
  */
 
-import type { StreamStatus } from 'shared/types'
+import type { StreamStatus } from 'shared/streamStatus'
 
 export type GateCheckResult =
   | { ok: true }

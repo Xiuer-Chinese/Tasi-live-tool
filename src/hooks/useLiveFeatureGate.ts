@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from 'react'
-import type { StreamStatus } from './useLiveControl'
+import type { StreamStatus } from 'shared/streamStatus'
 import { useCurrentLiveControl } from './useLiveControl'
 
 export type GateReason = 'NOT_CONNECTED' | 'NOT_LIVE' | 'AUTH_LOST' | 'UNKNOWN'

@@ -3,7 +3,13 @@
  * 统一管理所有直播相关任务的运行前置条件
  */
 
-export type TaskStopReason = 'disconnected' | 'stream_ended' | 'auth_lost' | 'manual'
+export type TaskStopReason =
+  | 'disconnected'
+  | 'stream_ended'
+  | 'auth_lost'
+  | 'manual'
+  | 'gate_failed'
+  | 'error'
 
 export type TaskStartReasonCode = 'NOT_CONNECTED' | 'NOT_LIVE' | 'AUTH_LOST'
 
@@ -115,6 +121,8 @@ export function getStopReasonText(reason: TaskStopReason, taskName?: string): st
     stream_ended: `直播已结束，${displayName}已停止`,
     auth_lost: `登录已失效，${displayName}已停止\n请重新扫码登录后再启动任务`,
     manual: `${displayName}已停止`,
+    gate_failed: `条件不满足，${displayName}已停止`,
+    error: `发生错误，${displayName}已停止`,
   }
   return reasonMap[reason] || `${displayName}已停止`
 }

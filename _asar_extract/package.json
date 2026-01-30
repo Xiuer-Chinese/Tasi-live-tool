@@ -1,0 +1,39 @@
+{
+  "name": "ta1-7",
+  "type": "commonjs",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TASI-live-Supertool - 专业直播助手工具",
+  "productName": "TASI-live-Supertool",
+  "author": "Live Studio Team",
+  "license": "MIT",
+  "main": "dist-electron/main/index.js",
+  "debug": {
+    "env": {
+      "VITE_DEV_SERVER_URL": "http://127.0.0.1:7777/"
+    }
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^11.7.0",
+    "electron-updater": "6.6.2",
+    "jsonwebtoken": "^9.0.2",
+    "playwright": "^1.50.0",
+    "playwright-extra": "^4.3.6",
+    "playwright-extra-plugin-stealth": "^0.0.1",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "uuid": "^9.0.1"
+  },
+  "lint-staged": {
+    "*": [
+      "biome check --write --no-errors-on-unmatched --files-ignore-unknown=true"
+    ]
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "better-sqlite3",
+      "electron-winstaller"
+    ]
+  }
+}
