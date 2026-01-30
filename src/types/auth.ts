@@ -73,3 +73,43 @@ export interface FeatureRestriction {
   requiredLicense: 'free' | 'trial' | 'premium' | 'enterprise'
   message: string
 }
+
+// ----- 云 API 类型（预留订阅） -----
+export interface CloudUserOut {
+  id: string
+  email: string | null
+  phone: string | null
+  created_at: string
+  last_login_at: string | null
+  status: string
+}
+
+export interface CloudSubscriptionOut {
+  plan: string
+  status: string
+  current_period_end: string | null
+  features: string[]
+}
+
+export interface CloudAuthResponse {
+  user: CloudUserOut
+  access_token: string
+  refresh_token: string
+  token_type?: string
+}
+
+export interface CloudRefreshResponse {
+  access_token: string
+  token_type?: string
+}
+
+export interface CloudMeResponse {
+  user: CloudUserOut
+  subscription: CloudSubscriptionOut
+}
+
+/** 云 API 错误详情 */
+export interface CloudErrorDetail {
+  code: string
+  message: string
+}

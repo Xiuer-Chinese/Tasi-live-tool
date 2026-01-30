@@ -1,67 +1,163 @@
 import { ipcMain } from 'electron'
-import type { RegisterData } from '../../../src/types/auth'
+import type { LoginCredentials, RegisterData } from '../../../src/types/auth'
 import { AuthService } from '../services/AuthService'
+import { clearStoredTokens, getStoredTokens, setStoredTokens } from '../services/CloudAuthStorage'
+import { cloudLogin, cloudMe, cloudRefresh, cloudRegister } from '../services/cloudAuthClient'
+import { cloudUserToSafeUser } from '../services/cloudAuthMappers'
 
-// 检查是否使用 Mock 认证服务
-// 可以通过环境变量控制：USE_MOCK_AUTH=true
-const USE_MOCK_AUTH = process.env.USE_MOCK_AUTH === 'true' || process.env.NODE_ENV === 'development'
+const USE_MOCK_AUTH =
+  process.env.USE_MOCK_AUTH === 'true' ||
+  (process.env.NODE_ENV === 'development' && process.env.USE_REAL_AUTH !== 'true')
 
-/**
- * 获取认证服务（根据配置选择使用 Mock 或真实服务）
- * 注意：MockAuthService 在 renderer 进程中运行（使用 localStorage）
- * 真实后端在 main 进程中运行（使用 SQLite）
- */
-async function _getAuthService() {
-  if (USE_MOCK_AUTH) {
-    // Mock 服务在 renderer 进程中，需要通过 IPC 调用
-    // 这里返回一个代理对象，实际调用会在 preload 中处理
-    return {
-      register: async (_data: RegisterData) => {
-        // 转发到 renderer 进程的 MockAuthService
-        // 注意：这需要在 preload 中实现
-        throw new Error('MockAuthService should be called from renderer process')
-      },
-    }
-  }
-  return AuthService
-}
+const USE_CLOUD_AUTH = !!process.env.AUTH_API_BASE_URL || !!process.env.VITE_AUTH_API_BASE_URL
 
 export function setupAuthHandlers() {
-  // Register user
-  ipcMain.handle('auth:register', async (_, data) => {
+  // ----- 云鉴权：恢复会话（启动时 refresh -> me） -----
+  ipcMain.handle('auth:restoreSession', async () => {
+    if (!USE_CLOUD_AUTH) {
+      return { success: false, user: null, token: null }
+    }
+    const { refresh_token } = getStoredTokens()
+    if (!refresh_token) return { success: false, user: null, token: null }
+    const refreshRes = await cloudRefresh(refresh_token)
+    if (!refreshRes.success || !refreshRes.access_token) {
+      clearStoredTokens()
+      return { success: false, user: null, token: null }
+    }
+    const meRes = await cloudMe(refreshRes.access_token)
+    if (!meRes.success || !meRes.user) {
+      return { success: false, user: null, token: null }
+    }
+    setStoredTokens({
+      access_token: refreshRes.access_token,
+      refresh_token,
+    })
+    return {
+      success: true,
+      user: cloudUserToSafeUser(meRes.user),
+      token: refreshRes.access_token,
+    }
+  })
+
+  // Register
+  ipcMain.handle('auth:register', async (_, data: RegisterData) => {
     if (USE_MOCK_AUTH) {
-      // Mock 服务在 renderer 进程中，返回特殊标记让 preload 处理
       return { __useMock: true, data }
+    }
+    if (USE_CLOUD_AUTH) {
+      const identifier = (data.email || '').trim()
+      if (!identifier) {
+        return { success: false, error: '请输入手机号或邮箱' }
+      }
+      const res = await cloudRegister(identifier, data.password)
+      if (!res.success) {
+        return { success: false, error: res.error }
+      }
+      if (res.access_token && res.refresh_token && res.user) {
+        setStoredTokens({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+        })
+        return {
+          success: true,
+          user: cloudUserToSafeUser(res.user),
+          token: res.access_token,
+        }
+      }
+      return { success: false, error: res.error }
     }
     return await AuthService.register(data)
   })
 
-  // Login user
-  ipcMain.handle('auth:login', async (_, credentials) => {
+  // Login
+  ipcMain.handle('auth:login', async (_, credentials: LoginCredentials) => {
+    if (USE_MOCK_AUTH) {
+      return { __useMock: true, data: credentials }
+    }
+    if (USE_CLOUD_AUTH) {
+      const identifier = (credentials.username || '').trim()
+      if (!identifier) {
+        return { success: false, error: '请输入手机号或邮箱' }
+      }
+      const res = await cloudLogin(identifier, credentials.password)
+      if (!res.success) {
+        return { success: false, error: res.error }
+      }
+      if (res.access_token && res.refresh_token && res.user) {
+        setStoredTokens({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+        })
+        return {
+          success: true,
+          user: cloudUserToSafeUser(res.user),
+          token: res.access_token,
+        }
+      }
+      return { success: false, error: res.error }
+    }
     return await AuthService.login(credentials)
   })
 
-  // Logout user
-  ipcMain.handle('auth:logout', async (_, token) => {
-    return AuthService.logout(token)
+  // Logout
+  ipcMain.handle('auth:logout', async (_, token: string) => {
+    if (USE_MOCK_AUTH) {
+      return { __useMock: true, data: { token } }
+    }
+    if (USE_CLOUD_AUTH) {
+      clearStoredTokens()
+      return true
+    }
+    return await AuthService.logout(token)
   })
 
-  // Validate token
-  ipcMain.handle('auth:validateToken', async (_, token) => {
-    return AuthService.validateToken(token)
-  })
-
-  // Get current user
-  ipcMain.handle('auth:getCurrentUser', async (_, token) => {
+  // Get current user（401 时自动 refresh 并重试一次）
+  ipcMain.handle('auth:getCurrentUser', async (_, token: string) => {
+    if (USE_MOCK_AUTH) {
+      return { __useMock: true, data: { token } }
+    }
+    if (USE_CLOUD_AUTH) {
+      if (!token) return null
+      let meRes = await cloudMe(token)
+      if (meRes.success && meRes.user) {
+        return cloudUserToSafeUser(meRes.user)
+      }
+      const { refresh_token } = getStoredTokens()
+      if (!refresh_token) return null
+      const refreshRes = await cloudRefresh(refresh_token)
+      if (!refreshRes.success || !refreshRes.access_token) return null
+      meRes = await cloudMe(refreshRes.access_token)
+      if (!meRes.success || !meRes.user) return null
+      setStoredTokens({
+        access_token: refreshRes.access_token,
+        refresh_token,
+      })
+      return cloudUserToSafeUser(meRes.user)
+    }
     return AuthService.getCurrentUser(token)
   })
 
+  // Validate token
+  ipcMain.handle('auth:validateToken', async (_, token: string) => {
+    if (USE_CLOUD_AUTH) {
+      const meRes = await cloudMe(token)
+      return meRes.success && meRes.user ? cloudUserToSafeUser(meRes.user) : null
+    }
+    return AuthService.validateToken(token)
+  })
+
   // Check feature access
-  ipcMain.handle('auth:checkFeatureAccess', async (_, token, feature) => {
-    const user = AuthService.getCurrentUser(token)
+  ipcMain.handle('auth:checkFeatureAccess', async (_, token: string, feature: string) => {
+    const user = await (async () => {
+      if (USE_CLOUD_AUTH && token) {
+        const meRes = await cloudMe(token)
+        if (meRes.success && meRes.user) return cloudUserToSafeUser(meRes.user)
+      }
+      if (USE_CLOUD_AUTH) return null
+      return AuthService.getCurrentUser(token)
+    })()
     const requiresAuth = AuthService.requiresAuthentication(feature)
     const requiredLicense = AuthService.getRequiredLicense(feature)
-
     return {
       canAccess: !requiresAuth || AuthService.hasLicense(user, requiredLicense),
       requiresAuth,
@@ -70,20 +166,15 @@ export function setupAuthHandlers() {
     }
   })
 
-  // Check if feature requires authentication
-  ipcMain.handle('auth:requiresAuthentication', async (_, feature) => {
+  ipcMain.handle('auth:requiresAuthentication', async (_, feature: string) => {
     return AuthService.requiresAuthentication(feature)
   })
 
-  // Update user profile
-  ipcMain.handle('auth:updateUserProfile', async (_, _token, _data) => {
-    // TODO: Implement user profile update
+  ipcMain.handle('auth:updateUserProfile', async (_, _token: string, _data: unknown) => {
     return { success: false, error: '功能开发中' }
   })
 
-  // Change password
-  ipcMain.handle('auth:changePassword', async (_, _token, _data) => {
-    // TODO: Implement password change
+  ipcMain.handle('auth:changePassword', async (_, _token: string, _data: unknown) => {
     return { success: false, error: '功能开发中' }
   })
 }

@@ -228,23 +228,35 @@ export const useAuthStore = create<AuthStore>()(
         }
       },
 
-      // Check authentication status
+      // Check authentication status（启动时：先尝试云鉴权 restoreSession，再 fallback 到 token + getCurrentUser）
       checkAuth: async () => {
-        const { token } = get()
-
-        if (!token) {
-          set({ isAuthenticated: false, user: null })
-          return
-        }
-
         set({ isLoading: true })
 
         try {
+          // 1) 云鉴权：主进程用 refresh_token 恢复会话（若有）
+          const restored = await window.authAPI.restoreSession()
+          if (restored?.success && restored.user && restored.token) {
+            set({
+              isAuthenticated: true,
+              user: restored.user as SafeUser,
+              token: restored.token,
+              isLoading: false,
+              error: null,
+            })
+            return
+          }
+
+          const { token } = get()
+          if (!token) {
+            set({ isAuthenticated: false, user: null, isLoading: false })
+            return
+          }
+
+          // 2) 用当前 token 拉取用户（401 时主进程会自动 refresh 并重试一次）
           let user = (await window.authAPI.getCurrentUser(token)) as
             | SafeUser
             | null
             | (SafeUser & { __useMock?: boolean })
-          // 如果返回 __useMock 标记，使用 MockAuthService
           if (user && typeof user === 'object' && '__useMock' in user && user.__useMock) {
             user = MockAuthService.getCurrentUser(token)
           }
@@ -257,7 +269,6 @@ export const useAuthStore = create<AuthStore>()(
               error: null,
             })
           } else {
-            // Token invalid, clear auth state
             set({
               isAuthenticated: false,
               user: null,

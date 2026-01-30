@@ -12,7 +12,7 @@ const UNPACKED_EXTERNALS = new Set([
   'playwright-extra-plugin-stealth',
   'puppeteer-extra-plugin-stealth',
 ])
-if (app.isPackaged && process.resourcesPath) {
+if (typeof app !== 'undefined' && app.isPackaged && process.resourcesPath) {
   const Mod = require('module') as { prototype: { require: (id: string) => unknown } }
   const unpackedNodeModules = path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules')
   const originalRequire = Mod.prototype.require

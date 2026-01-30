@@ -1,0 +1,35 @@
+# 本地/阿里云 ECS 均可使用。生产可改为连接阿里云 RDS，去掉 mysql 服务。
+version: "3.8"
+
+services:
+  api:
+    build:
+      context: ../auth-api
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=mysql+pymysql://root:password@mysql:3306/auth_db
+      - JWT_SECRET=change-me-in-production
+      - CORS_ORIGINS=*
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mysql_data:

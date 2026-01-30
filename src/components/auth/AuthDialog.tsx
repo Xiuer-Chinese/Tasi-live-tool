@@ -236,16 +236,17 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
   const displayError = error || validationError
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
-        className="w-full max-w-[420px] bg-white rounded-2xl shadow-xl p-6"
-        style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}
+        className="w-full max-w-[420px] bg-white rounded-xl border border-[hsl(var(--border))] p-6"
+        style={{ boxShadow: 'var(--shadow-card)' }}
       >
         {/* Header */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-5">
           <h1
-            className="text-2xl font-semibold text-gray-900 mb-0"
+            className="text-xl font-semibold mb-0"
             style={{
+              color: 'var(--text-primary)',
               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             }}
           >
@@ -257,9 +258,9 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
         <div>
           {/* Error Message */}
           {displayError && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-100 rounded-xl">
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
               <p
-                className="text-[13px] text-red-600"
+                className="text-[13px] text-destructive"
                 style={{
                   fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 }}
@@ -279,7 +280,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                 value={loginForm.username}
                 onChange={e => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
                 onKeyDown={e => handleKeyDown(e, 'login')}
-                className="h-11 border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-[15px] focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="h-10 border-input text-foreground placeholder:text-muted-foreground rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-ring/30"
                 required
                 autoFocus
               />
@@ -292,13 +293,13 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                   value={loginForm.password}
                   onChange={e => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                   onKeyDown={e => handleKeyDown(e, 'login')}
-                  className="h-11 border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-[15px] pr-12 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="h-10 border-input text-foreground placeholder:text-muted-foreground rounded-lg text-sm pr-12 focus-visible:ring-2 focus-visible:ring-ring/30"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150 p-1"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -311,16 +312,19 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                   id="remember-me"
                   checked={loginForm.rememberMe}
                   onChange={e => setLoginForm(prev => ({ ...prev, rememberMe: e.target.checked }))}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary/20"
+                  className="h-4 w-4 rounded border-input text-primary focus:ring-ring/30"
                 />
-                <Label htmlFor="remember-me" className="text-[13px] text-gray-600 cursor-pointer">
+                <Label
+                  htmlFor="remember-me"
+                  className="text-[13px] text-muted-foreground cursor-pointer"
+                >
                   记住登录状态
                 </Label>
               </div>
 
               <Button
                 type="submit"
-                className="w-full h-11 rounded-xl text-[15px] font-medium mt-4 bg-primary hover:bg-primary/90 text-white"
+                className="w-full h-10 rounded-lg text-sm font-medium mt-4"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -340,7 +344,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
               <div className="mt-4 space-y-2">
                 {/* 第一行：还没有账号？ + 立即注册 */}
                 <div className="flex items-center justify-center gap-2 text-[14px]">
-                  <span className="text-gray-500">还没有账号？</span>
+                  <span className="text-muted-foreground">还没有账号？</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -348,7 +352,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                       clearError()
                       setValidationError(null)
                     }}
-                    className="text-primary hover:text-primary/80 font-medium transition-colors"
+                    className="text-primary hover:opacity-80 font-medium transition-colors duration-150"
                   >
                     立即注册
                   </button>
@@ -362,7 +366,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                       // 忘记密码功能暂不实现，只显示提示
                       toast.error('忘记密码功能开发中')
                     }}
-                    className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-150"
                   >
                     忘记密码？
                   </button>
@@ -380,7 +384,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                 placeholder="手机号或邮箱"
                 value={registerForm.email}
                 onChange={e => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
-                className="h-11 border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-[15px] focus:border-primary focus:ring-2 focus:ring-primary/20"
+                className="h-10 border-input text-foreground placeholder:text-muted-foreground rounded-lg text-sm focus-visible:ring-2 focus-visible:ring-ring/30"
                 required
                 autoFocus
               />
@@ -392,14 +396,14 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                   placeholder="密码（至少6位）"
                   value={registerForm.password}
                   onChange={e => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
-                  className="h-11 border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-[15px] pr-12 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="h-10 border-input text-foreground placeholder:text-muted-foreground rounded-lg text-sm pr-12 focus-visible:ring-2 focus-visible:ring-ring/30"
                   required
                   minLength={6}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150 p-1"
                   tabIndex={-1}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -416,13 +420,13 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                     setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))
                   }
                   onKeyDown={e => handleKeyDown(e, 'register')}
-                  className="h-11 border-gray-200 text-gray-900 placeholder:text-gray-400 rounded-xl text-[15px] pr-12 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="h-10 border-input text-foreground placeholder:text-muted-foreground rounded-lg text-sm pr-12 focus-visible:ring-2 focus-visible:ring-ring/30"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors p-1"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors duration-150 p-1"
                   tabIndex={-1}
                 >
                   {showConfirmPassword ? (
@@ -435,7 +439,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
 
               <Button
                 type="submit"
-                className="w-full h-11 rounded-xl text-[15px] font-medium mt-4 bg-primary hover:bg-primary/90 text-white"
+                className="w-full h-10 rounded-lg text-sm font-medium mt-4"
                 disabled={isLoading || isSubmitting}
               >
                 {isLoading || isSubmitting ? (
@@ -455,7 +459,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
               <div className="mt-4 space-y-2">
                 {/* 第一行：已有账号？ + 立即登录 */}
                 <div className="flex items-center justify-center gap-2 text-[14px]">
-                  <span className="text-gray-500">已有账号？</span>
+                  <span className="text-muted-foreground">已有账号？</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -463,7 +467,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                       clearError()
                       setValidationError(null)
                     }}
-                    className="text-primary hover:text-primary/80 font-medium transition-colors"
+                    className="text-primary hover:opacity-80 font-medium transition-colors duration-150"
                   >
                     立即登录
                   </button>
@@ -477,7 +481,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
                       // 忘记密码功能暂不实现，只显示提示
                       toast.error('忘记密码功能开发中')
                     }}
-                    className="text-[13px] text-gray-400 hover:text-gray-600 transition-colors"
+                    className="text-[13px] text-muted-foreground hover:text-foreground transition-colors duration-150"
                   >
                     忘记密码？
                   </button>
@@ -491,7 +495,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
             <Button
               variant="ghost"
               onClick={onClose}
-              className="text-[13px] text-gray-400 hover:text-gray-600 h-auto p-0"
+              className="text-[13px] text-muted-foreground hover:text-foreground h-auto p-0"
             >
               取消
             </Button>

@@ -76,38 +76,36 @@ export default function Sidebar() {
 
   return (
     <aside
-      className="w-64 min-w-[256px] relative z-[1]"
+      className="w-56 min-w-[224px] relative z-[1]"
       style={{
         backgroundColor: 'var(--sidebar-bg)',
         boxShadow: 'var(--sidebar-edge-shadow)',
       }}
     >
-      <div className="p-6">
-        <nav className="space-y-2">
+      <div className="py-5 px-4">
+        <nav className="space-y-1">
           {filteredTabs.map(tab => (
             <NavLink
               key={tab.id}
               to={tab.id}
               className={({ isActive }) =>
                 cn(
-                  'group flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition-all relative',
+                  'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-150 relative',
                   isActive
                     ? 'bg-[var(--sidebar-active-bg)] text-primary'
-                    : 'text-muted-foreground hover:bg-[color:var(--sidebar-item-hover)] hover:text-foreground hover:translate-x-0.5',
+                    : 'text-muted-foreground hover:bg-[color:var(--sidebar-item-hover)] hover:text-foreground',
                 )
               }
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <span className="absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-full bg-primary" />
+                    <span className="absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full bg-primary" />
                   )}
-                  <span className="transition-transform duration-200 group-hover:-rotate-3">
-                    {tab.icon}
-                  </span>
-                  {tab.name}
+                  <span className="shrink-0 [&>svg]:size-5">{tab.icon}</span>
+                  <span className="truncate">{tab.name}</span>
                   {tab.isRunning && (
-                    <span className="absolute right-3 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="absolute right-2.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                   )}
                 </>
               )}

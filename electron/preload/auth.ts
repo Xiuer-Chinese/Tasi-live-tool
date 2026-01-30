@@ -52,6 +52,18 @@ export const authAPI = {
     return ipcRenderer.invoke('auth:getCurrentUser', token)
   },
 
+  /** 云鉴权：用主进程存储的 refresh_token 恢复会话（启动时调用） */
+  restoreSession: async (): Promise<{
+    success: boolean
+    user?: Omit<User, 'passwordHash'>
+    token?: string
+  }> => {
+    if (USE_MOCK_AUTH) {
+      return { success: false }
+    }
+    return await ipcRenderer.invoke('auth:restoreSession')
+  },
+
   // Feature access
   checkFeatureAccess: (token: string, feature: string) =>
     ipcRenderer.invoke('auth:checkFeatureAccess', token, feature),

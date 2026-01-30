@@ -47,7 +47,7 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
       case 'trial':
         return 'bg-blue-100 text-blue-800'
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-muted text-foreground'
     }
   }
 
@@ -87,7 +87,7 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       onKeyDown={e => {
         if (e.key === 'Escape') {
@@ -99,8 +99,8 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
       aria-labelledby="user-center-title"
     >
       <div
-        className="w-[480px] max-w-[92vw] max-h-[70vh] bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col"
-        style={{ boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)' }}
+        className="w-[480px] max-w-[92vw] max-h-[70vh] bg-white rounded-xl border border-[hsl(var(--border))] overflow-hidden flex flex-col"
+        style={{ boxShadow: 'var(--shadow-card)' }}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => {
           if (e.key === 'Enter' || e.key === ' ') {
@@ -110,11 +110,11 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
         role="document"
       >
         {/* Header */}
-        <div className="relative px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="relative px-6 pt-6 pb-4 border-b border-[hsl(var(--border))]">
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-4 top-4 text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="absolute right-4 top-4 text-muted-foreground hover:text-foreground transition-colors duration-150 p-1"
             aria-label="关闭"
           >
             <X className="h-5 w-5" />
@@ -126,10 +126,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                 {getLicenseIcon(user.licenseType)}
               </div>
               <div className="flex-1 min-w-0">
-                <h2 id="user-center-title" className="text-xl font-semibold text-gray-900 truncate">
+                <h2
+                  id="user-center-title"
+                  className="text-lg font-semibold text-foreground truncate"
+                >
                   {user.username}
                 </h2>
-                <p className="text-sm text-gray-500 truncate mt-0.5">{user.email}</p>
+                <p className="text-sm text-muted-foreground truncate mt-0.5">{user.email}</p>
               </div>
             </div>
             <Badge className={`${getLicenseColor(user.licenseType)} flex-shrink-0`}>
@@ -146,22 +149,22 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
           <div className="space-y-5">
             {/* Section A: 权益说明 */}
             <div className="space-y-3">
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {getLicenseDescription(user.licenseType)}
               </p>
 
               {/* 注册时间/最后登录 - 两列布局 */}
-              <div className="grid grid-cols-2 gap-4 text-xs text-gray-500">
+              <div className="grid grid-cols-2 gap-4 text-xs text-muted-foreground">
                 <div>
-                  <span className="text-gray-400">注册时间</span>
-                  <p className="text-gray-600 mt-0.5">
+                  <span className="text-muted-foreground/80">注册时间</span>
+                  <p className="text-foreground mt-0.5">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </p>
                 </div>
                 {user.lastLogin && (
                   <div>
-                    <span className="text-gray-400">最后登录</span>
-                    <p className="text-gray-600 mt-0.5">
+                    <span className="text-muted-foreground/80">最后登录</span>
+                    <p className="text-foreground mt-0.5">
                       {new Date(user.lastLogin).toLocaleDateString()}
                     </p>
                   </div>
@@ -173,20 +176,20 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
 
             {/* Section B: 功能权限 */}
             <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-gray-900">功能权限</h4>
+              <h4 className="text-sm font-semibold text-foreground">功能权限</h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 {/* 直播控制 */}
                 <div className="flex items-center gap-2">
                   {hasFeature(['free', 'trial', 'premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <div className="h-2 w-2 rounded-full bg-gray-300 flex-shrink-0" />
+                    <div className="h-2 w-2 rounded-full bg-muted-foreground/40 flex-shrink-0" />
                   )}
                   <span
                     className={
                       hasFeature(['free', 'trial', 'premium', 'enterprise'])
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     直播控制
@@ -198,13 +201,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                   {hasFeature(['trial', 'premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span
                     className={
                       hasFeature(['trial', 'premium', 'enterprise'])
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     自动回复
@@ -216,13 +219,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                   {hasFeature(['trial', 'premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span
                     className={
                       hasFeature(['trial', 'premium', 'enterprise'])
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     自动发言
@@ -234,13 +237,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                   {hasFeature(['trial', 'premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span
                     className={
                       hasFeature(['trial', 'premium', 'enterprise'])
-                        ? 'text-gray-900'
-                        : 'text-gray-400'
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     自动弹窗
@@ -252,11 +255,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                   {hasFeature(['premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span
                     className={
-                      hasFeature(['premium', 'enterprise']) ? 'text-gray-900' : 'text-gray-400'
+                      hasFeature(['premium', 'enterprise'])
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     AI 助手
@@ -268,11 +273,13 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
                   {hasFeature(['premium', 'enterprise']) ? (
                     <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
                   ) : (
-                    <Lock className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                   )}
                   <span
                     className={
-                      hasFeature(['premium', 'enterprise']) ? 'text-gray-900' : 'text-gray-400'
+                      hasFeature(['premium', 'enterprise'])
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
                     }
                   >
                     高级设置
@@ -284,7 +291,7 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
         </div>
 
         {/* Footer - Fixed */}
-        <div className="px-6 pt-4 pb-6 border-t border-gray-100 space-y-2">
+        <div className="px-6 pt-4 pb-6 border-t border-[hsl(var(--border))] space-y-2">
           <Button
             variant="outline"
             className="w-full"
@@ -297,7 +304,7 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
 
           <Button
             variant="destructive"
-            className="w-full bg-red-500 hover:bg-red-600 text-white"
+            className="w-full"
             onClick={handleLogout}
             disabled={isLoggingOut}
           >

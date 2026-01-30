@@ -328,11 +328,7 @@ const ConnectToLiveControl = React.memo(() => {
       onClick={handleButtonClick}
       disabled={connectState.status === 'connecting'}
       variant={connectState.status === 'connected' ? 'destructive' : 'default'}
-      className={
-        connectState.status !== 'connected'
-          ? 'font-bold text-base shadow-md hover:shadow-lg transition-all scale-100 hover:scale-[1.02]'
-          : undefined
-      }
+      className={connectState.status !== 'connected' ? 'font-medium text-sm' : undefined}
     >
       {getButtonText()}
     </Button>

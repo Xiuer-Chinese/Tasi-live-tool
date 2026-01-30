@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 
-const api = window.ipcRenderer
+const api = typeof window !== 'undefined' ? window.ipcRenderer : undefined
 
-export function useIpcListener<Channel extends Parameters<typeof api.on>[0]>(
-  ...args: Parameters<typeof api.on<Channel>>
+export function useIpcListener<Channel extends string>(
+  channel: Channel,
+  callback: (...args: unknown[]) => void,
 ) {
-  const [channel, callback] = args
   const callbackRef = useRef(callback)
 
   useEffect(() => {
@@ -13,7 +13,9 @@ export function useIpcListener<Channel extends Parameters<typeof api.on>[0]>(
   }, [callback])
 
   useEffect(() => {
-    const listener = (...args: Parameters<typeof callback>) => {
+    if (!api?.on) return
+
+    const listener = (...args: unknown[]) => {
       callbackRef.current(...args)
     }
 

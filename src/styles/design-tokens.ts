@@ -14,10 +14,10 @@ export const designTokens = {
    */
   colors: {
     primary: {
-      DEFAULT: 'hsl(20, 90%, 48%)',
-      hover: 'hsl(20, 90%, 45%)',
-      light: 'hsl(20, 80%, 94%)',
-      dark: 'hsl(20, 70%, 30%)',
+      DEFAULT: 'hsl(22, 75%, 50%)',
+      hover: 'hsl(22, 75%, 46%)',
+      light: 'hsl(22, 60%, 95%)',
+      dark: 'hsl(22, 65%, 38%)',
     },
     semantic: {
       success: 'hsl(142, 71%, 45%)',
@@ -121,12 +121,12 @@ export const designTokens = {
     none: 'shadow-none',
     xs: 'shadow-xs',
     sm: 'shadow-sm',
-    md: 'shadow-md shadow-primary/15',
-    lg: 'shadow-lg shadow-primary/25',
-    xl: 'shadow-xl shadow-primary/30',
+    md: 'shadow-md',
+    lg: 'shadow-lg',
+    xl: 'shadow-xl',
     component: {
-      button: 'shadow-md shadow-primary/15',
-      buttonHover: 'shadow-lg shadow-primary/25',
+      button: 'shadow-sm',
+      buttonHover: 'shadow-md',
       card: 'shadow-sm',
       modal: 'shadow-xl',
       inputFocus: 'ring-2 ring-primary/20',
@@ -173,20 +173,20 @@ export const designTokens = {
   },
 
   /**
-   * 主题配置 (Theme Configuration)
+   * 主题配置 (Theme Configuration) — Apple + 高级 SaaS
    */
   theme: {
     light: {
-      header: 'bg-gradient-to-r from-orange-50 via-white to-amber-50',
-      sidebar: 'bg-gradient-to-b from-orange-50 via-white to-amber-50',
+      header: 'bg-[var(--header-bg)]',
+      sidebar: 'bg-[var(--sidebar-bg)]',
       modal: 'bg-white',
-      backdrop: 'bg-black/40 backdrop-blur-sm',
+      backdrop: 'bg-black/30 backdrop-blur-sm',
     },
     dark: {
-      header: 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900',
-      sidebar: 'bg-gradient-to-b from-gray-900 via-gray-800 to-gray-900',
-      modal: 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900',
-      backdrop: 'bg-black/60 backdrop-blur-sm',
+      header: 'bg-[var(--header-bg)]',
+      sidebar: 'bg-[var(--sidebar-bg)]',
+      modal: 'bg-[var(--surface)]',
+      backdrop: 'bg-black/50 backdrop-blur-sm',
     },
   },
 } as const

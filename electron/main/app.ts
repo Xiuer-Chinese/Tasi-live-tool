@@ -86,7 +86,8 @@ if (os.release().startsWith('6.1')) app.disableHardwareAcceleration()
 // Set application name for Windows 10+ notifications
 if (process.platform === 'win32') app.setAppUserModelId(app.getName())
 
-if (!app.requestSingleInstanceLock()) {
+// 开发模式下不启用单实例锁，确保每次 npm run dev 都能弹出新窗口（避免旧实例在托盘导致看不到窗口）
+if (app.isPackaged && !app.requestSingleInstanceLock()) {
   app.quit()
   process.exit(0)
 }
@@ -133,94 +134,119 @@ function setConfig(config: { hideToTrayTipDismissed: boolean }) {
 }
 
 async function createWindow() {
-  logWindowDebug('createWindow called')
-  win = new BrowserWindow({
-    title: `她似-Live-Supertool - v${app.getVersion()}`,
-    width: 1280,
-    height: 800,
-    show: false,
-    autoHideMenuBar: app.isPackaged,
-    icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
-    webPreferences: {
-      preload,
-      // Security: Use contextBridge instead of nodeIntegration
-      // When contextIsolation is true, nodeIntegration should be false
-      nodeIntegration: false,
-      contextIsolation: true, // Required for contextBridge to work
-      // Enable webSecurity for production
-      webSecurity: app.isPackaged,
-    },
-  })
+  const isDev = !!VITE_DEV_SERVER_URL
+  // 未打包（npm run dev）时一律视为开发环境，保证窗口一定会显示，不依赖 VITE_DEV_SERVER_URL 是否注入
+  const showUnpackaged = !app.isPackaged
+  try {
+    logWindowDebug('createWindow called')
+    win = new BrowserWindow({
+      title: `她似-Live-Supertool - v${app.getVersion()}`,
+      width: 1280,
+      height: 800,
+      x: isDev || showUnpackaged ? 80 : undefined,
+      y: isDev || showUnpackaged ? 60 : undefined,
+      show: isDev || showUnpackaged,
+      autoHideMenuBar: app.isPackaged,
+      icon: path.join(process.env.VITE_PUBLIC ?? '', 'favicon.ico'),
+      webPreferences: {
+        preload,
+        nodeIntegration: false,
+        contextIsolation: true,
+        webSecurity: app.isPackaged,
+      },
+    })
 
-  win.once('ready-to-show', () => {
-    logWindowDebug('ready-to-show')
-    win?.show()
-  })
+    win.once('ready-to-show', () => {
+      logWindowDebug('ready-to-show')
+      win?.show()
+      if (isDev || showUnpackaged) win?.focus()
+    })
 
-  // 确保窗口显示时任务栏可见
-  win.setSkipTaskbar(false)
+    win.setSkipTaskbar(false)
+    windowManager.setMainWindow(win)
 
-  windowManager.setMainWindow(win)
-
-  if (VITE_DEV_SERVER_URL) {
-    // #298
-    win.loadURL(VITE_DEV_SERVER_URL)
-    // Open devTool if the app is not packaged
-    win.webContents.openDevTools()
-  } else {
-    win.loadFile(indexHtml)
-  }
-
-  // 加载完成后检查更新
-  win.webContents.on('did-finish-load', async () => {
-    await updateManager.silentCheckForUpdate()
-  })
-
-  // Make all links open with the browser, not with the application
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:')) shell.openExternal(url)
-    return { action: 'deny' }
-  })
-
-  setTimeout(() => {
-    if (win && !win.isVisible()) win.show()
-  }, 1500)
-
-  // 拦截窗口关闭事件，改为隐藏到托盘
-  win.on('close', e => {
-    if (!isQuitting) {
-      e.preventDefault()
-
-      // 检查是否需要显示首次提示（在隐藏前检查，确保能立即显示）
-      const config = getConfig()
-      const shouldShowTip = !config.hideToTrayTipDismissed
-
-      // 隐藏窗口并设置不在任务栏显示
-      win?.hide()
-      win?.setSkipTaskbar(true)
-
-      // 立即显示系统通知（不依赖渲染进程）
-      if (shouldShowTip && Notification.isSupported()) {
-        const notification = new Notification({
-          title: '已最小化到托盘',
-          body: '应用仍在后台运行，可从托盘图标打开。可在设置中关闭此提示。',
-          icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
-          silent: false,
-        })
-
-        notification.on('click', () => {
-          // 点击通知时显示主窗口
-          if (win) {
-            win.show()
-            win.setSkipTaskbar(false)
-            win.focus()
-          }
-        })
-
-        notification.show()
-      }
+    if (VITE_DEV_SERVER_URL) {
+      win.loadURL(VITE_DEV_SERVER_URL).catch(err => {
+        createLogger('window').error('loadURL failed:', err)
+        logWindowDebug('loadURL failed')
+      })
+      win.webContents.openDevTools()
+    } else {
+      win.loadFile(indexHtml)
     }
-  })
+
+    win.webContents.on('did-finish-load', async () => {
+      await updateManager.silentCheckForUpdate()
+    })
+
+    win.webContents.setWindowOpenHandler(({ url }) => {
+      if (url.startsWith('https:')) shell.openExternal(url)
+      return { action: 'deny' }
+    })
+
+    // 未打包时：300ms 与 1500ms 两次强制显示并置前，避免 ready-to-show 未触发导致窗口一直不出现
+    if (showUnpackaged) {
+      const forceShow = () => {
+        if (win && !win.isDestroyed()) {
+          if (!win.isVisible()) {
+            logWindowDebug('fallback show')
+            win.show()
+          }
+          win.focus()
+          win.moveTop()
+        }
+      }
+      setTimeout(forceShow, 300)
+      setTimeout(forceShow, 1500)
+    } else {
+      setTimeout(() => {
+        if (win && !win.isDestroyed() && !win.isVisible()) {
+          logWindowDebug('fallback show')
+          win.show()
+        }
+      }, 1500)
+    }
+
+    // 仅在窗口创建成功后注册：拦截关闭事件，改为隐藏到托盘
+    win.on('close', e => {
+      if (!isQuitting) {
+        e.preventDefault()
+
+        // 检查是否需要显示首次提示（在隐藏前检查，确保能立即显示）
+        const config = getConfig()
+        const shouldShowTip = !config.hideToTrayTipDismissed
+
+        // 隐藏窗口并设置不在任务栏显示
+        win?.hide()
+        win?.setSkipTaskbar(true)
+
+        // 立即显示系统通知（不依赖渲染进程）
+        if (shouldShowTip && Notification.isSupported()) {
+          const notification = new Notification({
+            title: '已最小化到托盘',
+            body: '应用仍在后台运行，可从托盘图标打开。可在设置中关闭此提示。',
+            icon: path.join(process.env.VITE_PUBLIC, 'favicon.ico'),
+            silent: false,
+          })
+
+          notification.on('click', () => {
+            // 点击通知时显示主窗口
+            if (win) {
+              win.show()
+              win.setSkipTaskbar(false)
+              win.focus()
+            }
+          })
+
+          notification.show()
+        }
+      }
+    })
+  } catch (err) {
+    logWindowDebug('createWindow error')
+    createLogger('window').error('createWindow failed:', err)
+    dialog.showErrorBox('窗口创建失败', err instanceof Error ? err.message : String(err))
+  }
 }
 
 logWindowDebug('before whenReady')

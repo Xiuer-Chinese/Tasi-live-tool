@@ -21,12 +21,12 @@ export default function Settings() {
     }
   })
   return (
-    <div className="container py-8">
-      <div className="mb-6">
+    <div className="w-full py-2">
+      <div className="mb-8">
         <Title title="设置" description="管理您的应用程序设置和偏好" />
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         <BrowserSetting />
         <UpdateSetting />
         <AccountSetting />

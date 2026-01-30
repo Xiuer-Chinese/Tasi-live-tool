@@ -11,7 +11,10 @@ function Card({
   return (
     <div
       ref={ref}
-      className={cn('rounded-[14px] text-card-foreground', className)}
+      className={cn(
+        'rounded-xl border border-[hsl(var(--border))] text-card-foreground',
+        className,
+      )}
       style={{ backgroundColor: 'var(--surface)', boxShadow: 'var(--shadow-card)' }}
       {...props}
     />
@@ -26,7 +29,7 @@ function CardHeader({
 }: React.HTMLAttributes<HTMLDivElement> & {
   ref?: React.RefObject<HTMLDivElement>
 }) {
-  return <div ref={ref} className={cn('flex flex-col space-y-1.5 p-6', className)} {...props} />
+  return <div ref={ref} className={cn('flex flex-col space-y-1.5 p-5', className)} {...props} />
 }
 CardHeader.displayName = 'CardHeader'
 
@@ -73,7 +76,7 @@ function CardContent({
 }: React.HTMLAttributes<HTMLDivElement> & {
   ref?: React.RefObject<HTMLDivElement>
 }) {
-  return <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
+  return <div ref={ref} className={cn('p-5 pt-0', className)} {...props} />
 }
 CardContent.displayName = 'CardContent'
 
@@ -84,7 +87,7 @@ function CardFooter({
 }: React.HTMLAttributes<HTMLDivElement> & {
   ref?: React.RefObject<HTMLDivElement>
 }) {
-  return <div ref={ref} className={cn('flex items-center p-6 pt-0', className)} {...props} />
+  return <div ref={ref} className={cn('flex items-center p-5 pt-0', className)} {...props} />
 }
 CardFooter.displayName = 'CardFooter'
 

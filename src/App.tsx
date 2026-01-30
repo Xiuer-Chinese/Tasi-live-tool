@@ -254,40 +254,37 @@ function AppContent() {
             {/* 头部标题 */}
             <Header />
 
-            {/* 主体内容：Sidebar 与 Content 之间 12px 沟槽（app-bg 露出） */}
-            <div className="flex flex-1 overflow-hidden gap-3">
+            {/* 主体内容：Sidebar 与 Content 沟槽（app-bg 露出） */}
+            <div className="flex flex-1 overflow-hidden gap-0">
               {/* 侧边栏 */}
               <Sidebar />
 
-              {/* Main Content：独立容器背景 + 圆角切割 + 左缘阴影，与 Sidebar 结构性分隔 */}
               <main
                 className="min-h-0 flex-1 overflow-y-auto"
                 style={{
                   backgroundColor: 'var(--content-bg)',
-                  borderTopLeftRadius: '24px',
+                  borderTopLeftRadius: '16px',
                   boxShadow: 'var(--content-edge-shadow)',
-                  paddingTop: '64px',
-                  paddingBottom: '32px',
-                  paddingLeft: '32px',
-                  paddingRight: '32px',
+                  paddingTop: '72px',
+                  paddingBottom: '40px',
+                  paddingLeft: '40px',
+                  paddingRight: '40px',
                 }}
               >
-                <div className="mx-auto w-full max-w-6xl">
+                <div className="mx-auto w-full max-w-5xl">
                   <Outlet />
                 </div>
               </main>
             </div>
 
-            {/* 下半部分：日志显示器 - 默认权重显著降低，展开时再提升存在感 */}
             <div
               className={cn(
-                'transition-all duration-300',
-                logCollapsed
-                  ? 'h-12 shadow-none opacity-40'
-                  : 'h-[180px] shadow-[0_-2px_8px_rgba(0,0,0,0.06)] opacity-100',
+                'transition-all duration-200',
+                logCollapsed ? 'h-12 shadow-none opacity-50' : 'h-[180px] opacity-100',
               )}
               style={{
                 backgroundColor: logCollapsed ? 'var(--surface-muted)' : 'var(--surface)',
+                boxShadow: logCollapsed ? 'none' : '0 -1px 0 rgba(0,0,0,0.06)',
               }}
             >
               <LogDisplayer
@@ -295,8 +292,8 @@ function AppContent() {
                 onToggleCollapsed={() => setLogCollapsed(prev => !prev)}
               />
             </div>
+            <UpdateDialog />
           </div>
-          <UpdateDialog />
         </ContextMenuTrigger>
         {devMode && (
           <ContextMenuContent>

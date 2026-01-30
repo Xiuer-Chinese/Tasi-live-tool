@@ -26,6 +26,13 @@ export interface AuthAPI {
 
   getCurrentUser: (token: string) => Promise<Omit<User, 'passwordHash'> | null>
 
+  /** 云鉴权：用主进程存储的 refresh_token 恢复会话（启动时调用） */
+  restoreSession: () => Promise<{
+    success: boolean
+    user?: Omit<User, 'passwordHash'>
+    token?: string
+  }>
+
   checkFeatureAccess: (
     token: string,
     feature: string,
