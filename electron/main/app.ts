@@ -1,3 +1,4 @@
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import process from 'node:process'
@@ -99,6 +100,50 @@ function logWindowDebug(phase: string, w: BrowserWindow | null = win): void {
   appendFileSync(TASI_DEBUG_PATH, line)
 }
 
+/** 开发模式：等待 localhost:5173 可连接再 loadURL，避免 ERR_CONNECTION_REFUSED 白屏 */
+function waitForDevServer(
+  url: string,
+  maxWaitMs = 30000,
+  intervalMs = 500,
+  initialDelayMs = 3000,
+): Promise<void> {
+  let host = '127.0.0.1'
+  let port = 5173
+  try {
+    const u = new URL(url)
+    host = u.hostname || host
+    port = u.port ? Number.parseInt(u.port, 10) : 5173
+  } catch {
+    /* 用默认 */
+  }
+  return new Promise(resolve => {
+    const start = Date.now()
+    function tryConnect() {
+      if (Date.now() - start >= maxWaitMs) {
+        resolve()
+        return
+      }
+      const socket = new net.Socket()
+      const t = setTimeout(() => {
+        socket.destroy()
+        setTimeout(tryConnect, intervalMs)
+      }, 3000)
+      socket.once('connect', () => {
+        clearTimeout(t)
+        socket.destroy()
+        resolve()
+      })
+      socket.once('error', () => {
+        clearTimeout(t)
+        socket.destroy()
+        setTimeout(tryConnect, intervalMs)
+      })
+      socket.connect(port, host)
+    }
+    setTimeout(tryConnect, initialDelayMs)
+  })
+}
+
 let win: BrowserWindow | null = null
 let tray: Tray | null = null
 let isQuitting = false
@@ -165,11 +210,61 @@ async function createWindow() {
     win.setSkipTaskbar(false)
     windowManager.setMainWindow(win)
 
+    // 仅开发环境：从 Vite 开发服务器加载（localhost:5173）。打包后 VITE_DEV_SERVER_URL 未注入，走 else 分支 loadFile，不会出现“连不上 5173”的白屏。
+    const DEV_LOAD_RETRY_MAX = 2
+    const DEV_LOAD_RETRY_DELAY_MS = 4000
+    let devLoadRetryCount = 0
+
     if (VITE_DEV_SERVER_URL) {
+      console.log('[main] 等待 Vite 开发服务器 (localhost:5173)…')
+      await waitForDevServer(VITE_DEV_SERVER_URL).catch(() => {})
+      console.log('[main] 正在加载页面:', VITE_DEV_SERVER_URL)
       win.loadURL(VITE_DEV_SERVER_URL).catch(err => {
         createLogger('window').error('loadURL failed:', err)
         logWindowDebug('loadURL failed')
       })
+
+      // 开发环境：首次加载失败（ERR_CONNECTION_REFUSED）时自动重试，减少“关进程/删 dist/重启”的困扰
+      win.webContents.on(
+        'did-fail-load',
+        (_, errorCode, errorDescription, validatedURL, isMainFrame) => {
+          if (
+            !VITE_DEV_SERVER_URL ||
+            !isMainFrame ||
+            errorCode !== -102 ||
+            errorDescription !== 'ERR_CONNECTION_REFUSED' ||
+            !validatedURL?.startsWith('http://localhost:')
+          ) {
+            return
+          }
+          if (devLoadRetryCount >= DEV_LOAD_RETRY_MAX) {
+            console.log(
+              '[main] 开发页面加载已重试',
+              DEV_LOAD_RETRY_MAX,
+              '次，请检查 Vite 是否已启动或执行 npm run dev:force',
+            )
+            return
+          }
+          devLoadRetryCount += 1
+          console.log(
+            '[main] 开发页面加载失败，',
+            DEV_LOAD_RETRY_DELAY_MS / 1000,
+            '秒后重试 (',
+            devLoadRetryCount,
+            '/',
+            DEV_LOAD_RETRY_MAX,
+            ')',
+          )
+          setTimeout(() => {
+            if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
+              win.loadURL(VITE_DEV_SERVER_URL!).catch(err => {
+                createLogger('window').error('loadURL retry failed:', err)
+              })
+            }
+          }, DEV_LOAD_RETRY_DELAY_MS)
+        },
+      )
+
       win.webContents.openDevTools()
     } else {
       win.loadFile(indexHtml)

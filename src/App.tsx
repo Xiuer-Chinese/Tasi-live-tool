@@ -178,6 +178,9 @@ function AppContent() {
     return localStorage.getItem('logPanelCollapsed') === 'true'
   })
 
+  // 【关键】注册全局 IPC 事件监听（notifyAccountName -> 已连接、disconnectedEvent、streamStateChanged 等），不调用则 UI 收不到主进程事件，界面会空白/异常
+  _useGlobalIpcListener()
+
   // Check if running in Electron environment
   useEffect(() => {
     if (!window.ipcRenderer) {

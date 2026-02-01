@@ -15,6 +15,7 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:force": "node -e \"require('fs').rmSync('dist-electron',{recursive:true,force:true})\" && vite",
     "build": "tsc && vite build && node -e \"const fs=require('fs'); const p='dist-electron/main/runtime'; fs.mkdirSync(p,{recursive:true}); fs.copyFileSync('electron/main/runtime/load-playwright.cjs', p+'/load-playwright.cjs'); if(!fs.existsSync(p+'/load-playwright.cjs')){console.error('FATAL: dist-electron/main/runtime/load-playwright.cjs not found after build'); process.exit(1)}\"",
     "build-exe": "npm run build && electron-builder --publish never",
     "dist:clean": "node -e \"require('fs').rmSync('release',{recursive:true,force:true})\"",
