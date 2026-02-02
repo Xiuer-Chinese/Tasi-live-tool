@@ -62,6 +62,7 @@ export function setupAuthHandlers() {
           success: true,
           user: cloudUserToSafeUser(res.user),
           token: res.access_token,
+          refresh_token: res.refresh_token,
         }
       }
       return { success: false, error: res.error }
@@ -92,6 +93,7 @@ export function setupAuthHandlers() {
           success: true,
           user: cloudUserToSafeUser(res.user),
           token: res.access_token,
+          refresh_token: res.refresh_token,
         }
       }
       return { success: false, error: res.error }

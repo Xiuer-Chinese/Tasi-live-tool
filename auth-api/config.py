@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # JWT
     JWT_SECRET: str = "change-me-in-production"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
     # CORS：先放开 * 测通，生产可改为 Electron 或具体域名
     CORS_ORIGINS: str = "*"
 

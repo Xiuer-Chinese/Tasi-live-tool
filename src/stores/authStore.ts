@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { getMe } from '../services/apiClient'
 import { MockAuthService } from '../services/MockAuthService'
 import type {
   AuthResponse,
@@ -13,14 +14,40 @@ import type {
 type LoginResponseWithMock = AuthResponse & { __useMock?: boolean; data?: LoginCredentials }
 type RegisterResponseWithMock = AuthResponse & { __useMock?: boolean; data?: RegisterData }
 
+/** 从 /me 返回的 username（即 sub）构建前端展示用 SafeUser */
+function safeUserFromUsername(username: string): SafeUser {
+  return {
+    id: username,
+    username,
+    email: '',
+    createdAt: new Date().toISOString(),
+    lastLogin: null,
+    status: 'active',
+    licenseType: 'free',
+    expiryDate: null,
+    deviceId: '',
+    machineFingerprint: '',
+  }
+}
+
 interface AuthStore extends AuthState {
+  /** 仅用于 refresh 流程，与 token（access）一起持久化 */
+  refreshToken: string | null
+  /** 启动时鉴权是否已完成（用于区分 loading / 登录页 / 主界面） */
+  authCheckDone: boolean
+  /** 有 token 但 /me 非 401 失败（断网/5xx）：保持已登录，仅提示离线 */
+  isOffline: boolean
   // Actions
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
+  /** 启动时调用：无 token→未登录；有 token→GET /me，200→已登录，401→尝试 refresh 后恢复或回登录页，其他→已登录但离线 */
   checkAuth: () => Promise<void>
   setUser: (user: SafeUser | null) => void
   setToken: (token: string | null) => void
+  setRefreshToken: (refreshToken: string | null) => void
+  /** refresh 失败时由 apiClient 调用：清空 token/refreshToken，回到登录页 */
+  clearTokensAndUnauth: () => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
@@ -33,8 +60,11 @@ export const useAuthStore = create<AuthStore>()(
       isAuthenticated: false,
       user: null,
       token: null,
+      refreshToken: null,
       isLoading: false,
       error: null,
+      authCheckDone: false,
+      isOffline: false,
 
       // Login action
       login: async (credentials: LoginCredentials) => {
@@ -51,11 +81,13 @@ export const useAuthStore = create<AuthStore>()(
             )) as LoginResponseWithMock
           }
 
+          const refreshToken = response.refresh_token ?? null
           if (response.success && response.user && response.token) {
             set({
               isAuthenticated: true,
               user: response.user,
               token: response.token,
+              refreshToken: refreshToken ?? get().refreshToken,
               isLoading: false,
               error: null,
             })
@@ -65,6 +97,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             user: null,
             token: null,
+            refreshToken: null,
             isLoading: false,
             error: response.error || '登录失败',
           })
@@ -75,6 +108,7 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             user: null,
             token: null,
+            refreshToken: null,
             isLoading: false,
             error: errorMessage,
           })
@@ -135,11 +169,13 @@ export const useAuthStore = create<AuthStore>()(
             error: response.error || null,
           })
 
+          const refreshToken = response.refresh_token ?? null
           if (response.success && response.user && response.token) {
             set({
               isAuthenticated: true,
               user: response.user,
               token: response.token,
+              refreshToken: refreshToken ?? get().refreshToken,
               isLoading: false,
               error: null,
             })
@@ -222,71 +258,57 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             user: null,
             token: null,
+            refreshToken: null,
             isLoading: false,
             error: null,
+            isOffline: false,
           })
         }
       },
 
-      // Check authentication status（启动时：先尝试云鉴权 restoreSession，再 fallback 到 token + getCurrentUser）
+      // 启动时鉴权：无 token→未登录；有 token→GET /me（内部 401 会尝试 refresh 后重试），200→已登录，401→回登录页，其他→已登录但离线
       checkAuth: async () => {
-        set({ isLoading: true })
+        set({ isLoading: true, authCheckDone: false })
 
-        try {
-          // 1) 云鉴权：主进程用 refresh_token 恢复会话（若有）
-          const restored = await window.authAPI.restoreSession()
-          if (restored?.success && restored.user && restored.token) {
-            set({
-              isAuthenticated: true,
-              user: restored.user as SafeUser,
-              token: restored.token,
-              isLoading: false,
-              error: null,
-            })
-            return
-          }
-
-          const { token } = get()
-          if (!token) {
-            set({ isAuthenticated: false, user: null, isLoading: false })
-            return
-          }
-
-          // 2) 用当前 token 拉取用户（401 时主进程会自动 refresh 并重试一次）
-          let user = (await window.authAPI.getCurrentUser(token)) as
-            | SafeUser
-            | null
-            | (SafeUser & { __useMock?: boolean })
-          if (user && typeof user === 'object' && '__useMock' in user && user.__useMock) {
-            user = MockAuthService.getCurrentUser(token)
-          }
-
-          if (user && !('__useMock' in user)) {
-            set({
-              isAuthenticated: true,
-              user: user as SafeUser,
-              isLoading: false,
-              error: null,
-            })
-          } else {
-            set({
-              isAuthenticated: false,
-              user: null,
-              token: null,
-              isLoading: false,
-              error: null,
-            })
-          }
-        } catch (error) {
-          console.error('Auth check error:', error)
+        const { token, refreshToken } = get()
+        if (!token && !refreshToken) {
           set({
             isAuthenticated: false,
             user: null,
-            token: null,
             isLoading: false,
+            authCheckDone: true,
+            isOffline: false,
+          })
+          return
+        }
+
+        const result = await getMe()
+
+        if (result.ok && result.data?.username != null) {
+          set({
+            isAuthenticated: true,
+            user: safeUserFromUsername(result.data.username),
+            isLoading: false,
+            authCheckDone: true,
+            isOffline: false,
             error: null,
           })
+          return
         }
+
+        if (result.status === 401) {
+          get().clearTokensAndUnauth()
+          set({ isLoading: false, authCheckDone: true })
+          return
+        }
+
+        // 断网/超时/5xx：不踢回登录页，保持已登录但离线
+        set({
+          isAuthenticated: true,
+          isLoading: false,
+          authCheckDone: true,
+          isOffline: true,
+        })
       },
 
       // Set user
@@ -294,6 +316,18 @@ export const useAuthStore = create<AuthStore>()(
 
       // Set token
       setToken: (token: string | null) => set({ token }),
+
+      setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
+
+      /** refresh 失败时由 apiClient 调用：清空 token/refreshToken，回到登录页 */
+      clearTokensAndUnauth: () =>
+        set({
+          isAuthenticated: false,
+          user: null,
+          token: null,
+          refreshToken: null,
+          isOffline: false,
+        }),
 
       // Set loading state
       setLoading: (loading: boolean) => set({ isLoading: loading }),
@@ -309,6 +343,7 @@ export const useAuthStore = create<AuthStore>()(
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({
         token: state.token,
+        refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
@@ -322,3 +357,5 @@ export const useUser = () => useAuthStore(state => state.user)
 export const useIsAuthenticated = () => useAuthStore(state => state.isAuthenticated)
 export const useAuthLoading = () => useAuthStore(state => state.isLoading)
 export const useAuthError = () => useAuthStore(state => state.error)
+export const useAuthCheckDone = () => useAuthStore(state => state.authCheckDone)
+export const useIsOffline = () => useAuthStore(state => state.isOffline)

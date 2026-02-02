@@ -17,7 +17,7 @@ class LoginBody(BaseModel):
 
 
 class RefreshBody(BaseModel):
-    refresh_token: str
+    refresh_token: Optional[str] = None
 
 
 # ----- 响应：用户（不含密码） -----

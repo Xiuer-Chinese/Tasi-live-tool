@@ -3,8 +3,10 @@ import hashlib
 import re
 import uuid
 from datetime import datetime, timedelta
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
 from config import settings
@@ -12,7 +14,9 @@ from database import get_db
 from deps import (
     create_access_token,
     create_refresh_token,
+    decode_refresh_token,
     hash_password,
+    security,
     verify_password,
 )
 from models import RefreshToken, Subscription, User
@@ -95,7 +99,7 @@ def register(body: RegisterBody, db: Session = Depends(get_db)):
     db.add(sub)
 
     access_token = create_access_token(user_id)
-    refresh_raw = create_refresh_token()
+    refresh_raw = create_refresh_token(user_id)
     refresh_hashed = token_hash(refresh_raw)
     expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     rt = RefreshToken(
@@ -156,7 +160,7 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
     db.refresh(user)
 
     access_token = create_access_token(user.id)
-    refresh_raw = create_refresh_token()
+    refresh_raw = create_refresh_token(user.id)
     refresh_hashed = token_hash(refresh_raw)
     expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     rt = RefreshToken(
@@ -183,24 +187,27 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=RefreshResponse)
-def refresh(body: RefreshBody, db: Session = Depends(get_db)):
-    raw = (body.refresh_token or "").strip()
+def refresh(
+    body: Optional[RefreshBody] = Body(None),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    db: Session = Depends(get_db),
+):
+    """校验 refresh_token（JWT type=refresh），成功仅返回新 access_token。支持 JSON body.refresh_token 或 Authorization: Bearer <refresh_token>"""
+    raw = (body.refresh_token if body and body.refresh_token else "").strip() or (
+        credentials.credentials if credentials else ""
+    )
     if not raw:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=err_token_invalid(),
         )
-    hashed = token_hash(raw)
-    rt = db.query(RefreshToken).filter(
-        RefreshToken.token_hash == hashed,
-        RefreshToken.revoked_at.is_(None),
-    ).first()
-    if not rt or rt.expires_at < datetime.utcnow():
+    user_id = decode_refresh_token(raw)
+    if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=err_token_invalid(),
         )
-    user = db.query(User).filter(User.id == rt.user_id).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if not user or user.status != "active":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

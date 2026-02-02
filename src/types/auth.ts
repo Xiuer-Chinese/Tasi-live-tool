@@ -57,6 +57,7 @@ export interface AuthResponse {
   success: boolean
   user?: SafeUser
   token?: string
+  refresh_token?: string
   error?: string
 }
 

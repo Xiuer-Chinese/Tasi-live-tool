@@ -192,13 +192,15 @@ export class MockAuthService {
       })
       saveTokens(tokens)
 
-      // 返回用户信息（不包含密码）
+      // 返回用户信息（不包含密码），与真实后端一致含 refresh_token
       const { passwordHash: _, ...userWithoutPassword } = user
+      const refresh_token = `mock_refresh_${token}`
 
       return {
         success: true,
         user: userWithoutPassword as SafeUser,
         token,
+        refresh_token,
       }
     } catch (error) {
       console.error('[MockAuthService] Registration error:', error)
@@ -251,13 +253,15 @@ export class MockAuthService {
       })
       saveTokens(tokens)
 
-      // 返回用户信息（不包含密码）
+      // 返回用户信息（不包含密码），与真实后端一致含 refresh_token
       const { passwordHash: _, ...userWithoutPassword } = user
+      const refresh_token = `mock_refresh_${token}`
 
       return {
         success: true,
         user: userWithoutPassword as SafeUser,
         token,
+        refresh_token,
       }
     } catch (error) {
       console.error('[MockAuthService] Login error:', error)

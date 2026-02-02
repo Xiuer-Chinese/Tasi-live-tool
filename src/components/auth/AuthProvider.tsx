@@ -1,18 +1,24 @@
+import { Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { AuthDialog } from '@/components/auth/AuthDialog'
+import { LoginPage } from '@/components/auth/LoginPage'
 import { UserCenter } from '@/components/auth/UserCenter'
 import { useAuthInit } from '@/hooks/useAuth'
+import { useAuthCheckDone, useIsAuthenticated, useIsOffline } from '@/stores/authStore'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showAuthDialog, setShowAuthDialog] = useState(false)
   const [showUserCenter, setShowUserCenter] = useState(false)
   const [currentFeature, setCurrentFeature] = useState<string>('')
 
-  // Initialize auth on app startup
+  const authCheckDone = useAuthCheckDone()
+  const isAuthenticated = useIsAuthenticated()
+  const isOffline = useIsOffline()
+
+  // 启动时执行一次鉴权（GET /me）
   useAuthInit()
 
   useEffect(() => {
-    // Listen for auth requirement events
     const handleAuthRequired = (event: CustomEvent) => {
       const { feature } = event.detail
       setCurrentFeature(feature)
@@ -39,11 +45,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Gate：未完成鉴权→加载；未登录→登录页；已登录→主内容
+  if (!authCheckDone) {
+    return (
+      <div
+        className="flex min-h-screen flex-col items-center justify-center gap-4"
+        style={{ backgroundColor: 'var(--app-bg)' }}
+      >
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="text-muted-foreground text-sm">加载中…</span>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <>
+        <LoginPage />
+        <AuthDialog
+          isOpen={showAuthDialog}
+          onClose={() => {
+            setShowAuthDialog(false)
+            setCurrentFeature('')
+          }}
+          feature={currentFeature}
+        />
+        <UserCenter isOpen={showUserCenter} onClose={() => setShowUserCenter(false)} />
+      </>
+    )
+  }
+
   return (
     <>
+      {isOffline && (
+        <div
+          className="border-b px-4 py-2 text-center text-sm"
+          style={{
+            backgroundColor: 'var(--surface-muted)',
+            color: 'var(--muted-foreground)',
+          }}
+        >
+          当前网络不可用，部分功能可能受限
+        </div>
+      )}
       {children}
 
-      {/* Auth Dialog */}
       <AuthDialog
         isOpen={showAuthDialog}
         onClose={() => {
@@ -52,8 +98,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }}
         feature={currentFeature}
       />
-
-      {/* User Center */}
       <UserCenter isOpen={showUserCenter} onClose={() => setShowUserCenter(false)} />
     </>
   )

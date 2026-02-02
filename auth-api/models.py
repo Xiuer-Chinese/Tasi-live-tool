@@ -1,7 +1,6 @@
 """数据表：users, refresh_tokens, subscriptions(预留)"""
 from datetime import datetime
-from sqlalchemy import Column, DateTime, ForeignKey, String
-from sqlalchemy.dialects.mysql import JSON
+from sqlalchemy import Column, DateTime, ForeignKey, JSON, String
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()

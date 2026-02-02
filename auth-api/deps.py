@@ -1,5 +1,4 @@
 """JWT 与依赖：access_token 解析、get_current_user、refresh 校验"""
-import uuid
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -11,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from config import settings
 from database import get_db
-from models import User, RefreshToken
+from models import User
 
 security = HTTPBearer(auto_error=False)
 
@@ -30,8 +29,22 @@ def create_access_token(user_id: str) -> str:
     return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
 
 
-def create_refresh_token() -> str:
-    return str(uuid.uuid4()).replace("-", "")
+def create_refresh_token(user_id: str) -> str:
+    """JWT with type=refresh，与 login 相同 SECRET+算法，较长有效期（如 7d）"""
+    expire = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    payload = {"sub": user_id, "exp": expire, "type": "refresh"}
+    return jwt.encode(payload, settings.JWT_SECRET, algorithm="HS256")
+
+
+def decode_refresh_token(token: str) -> Optional[str]:
+    """校验 refresh_token（type=refresh），成功返回 sub（user_id）"""
+    try:
+        payload = jwt.decode(token, settings.JWT_SECRET, algorithms=["HS256"])
+        if payload.get("type") != "refresh":
+            return None
+        return payload.get("sub")
+    except JWTError:
+        return None
 
 
 def decode_access_token(token: str) -> Optional[str]:
