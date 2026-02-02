@@ -36,7 +36,7 @@ async function request<T>(
       body: options.body ? JSON.stringify(options.body) : undefined,
     })
     const text = await res.text()
-    let json: T | { detail?: CloudErrorDetail } = null
+    let json: T | { detail?: CloudErrorDetail } | null = null
     try {
       json = text ? JSON.parse(text) : null
     } catch {

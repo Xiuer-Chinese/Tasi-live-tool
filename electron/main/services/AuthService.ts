@@ -220,15 +220,15 @@ export class AuthService {
     })
   }
 
-  // Remove sensitive data from user object
-  private static sanitizeUser(user: User): Omit<User, 'passwordHash'> {
+  /** 供 IPC 等边界使用：User → SafeUser，不暴露 passwordHash */
+  static sanitizeUser(user: User): Omit<User, 'passwordHash'> {
     const { passwordHash, ...sanitizedUser } = user
     return sanitizedUser
   }
 
-  // Check if user has required license
+  // Check if user has required license（接受 SafeUser | null，IPC 仅暴露 SafeUser）
   static hasLicense(
-    user: User | null,
+    user: Omit<User, 'passwordHash'> | null,
     requiredLicense: 'free' | 'trial' | 'premium' | 'enterprise',
   ): boolean {
     if (!user) return requiredLicense === 'free'

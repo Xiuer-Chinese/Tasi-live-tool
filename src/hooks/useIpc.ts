@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
+import type { IpcChannels } from 'shared/electron-api'
 
 const api = typeof window !== 'undefined' ? window.ipcRenderer : undefined
 
-export function useIpcListener<Channel extends string>(
+/** 监听 IPC 事件；Channel 限定为 IpcChannels 的 key，回调参数与主进程发送的 payload 一致 */
+export function useIpcListener<Channel extends keyof IpcChannels>(
   channel: Channel,
-  callback: (...args: unknown[]) => void,
+  callback: (...args: Parameters<IpcChannels[Channel]>) => void,
 ) {
   const callbackRef = useRef(callback)
 
@@ -15,7 +17,7 @@ export function useIpcListener<Channel extends string>(
   useEffect(() => {
     if (!api?.on) return
 
-    const listener = (...args: unknown[]) => {
+    const listener = (...args: Parameters<IpcChannels[Channel]>) => {
       callbackRef.current(...args)
     }
 

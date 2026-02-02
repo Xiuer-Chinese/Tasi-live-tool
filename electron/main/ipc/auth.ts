@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import type { LoginCredentials, RegisterData } from '../../../src/types/auth'
+import type { LoginCredentials, RegisterData, SafeUser, User } from '../../../src/types/auth'
 import { AuthService } from '../services/AuthService'
 import { clearStoredTokens, getStoredTokens, setStoredTokens } from '../services/CloudAuthStorage'
 import { cloudLogin, cloudMe, cloudRefresh, cloudRegister } from '../services/cloudAuthClient'
@@ -148,9 +148,9 @@ export function setupAuthHandlers() {
     return AuthService.validateToken(token)
   })
 
-  // Check feature access
+  // Check feature access（IPC 只暴露 SafeUser；本地 AuthService 返回 User 时在此映射为 SafeUser）
   ipcMain.handle('auth:checkFeatureAccess', async (_, token: string, feature: string) => {
-    const user = await (async () => {
+    const rawUser = await (async () => {
       if (USE_CLOUD_AUTH && token) {
         const meRes = await cloudMe(token)
         if (meRes.success && meRes.user) return cloudUserToSafeUser(meRes.user)
@@ -158,6 +158,12 @@ export function setupAuthHandlers() {
       if (USE_CLOUD_AUTH) return null
       return AuthService.getCurrentUser(token)
     })()
+    const user: SafeUser | null =
+      rawUser == null
+        ? null
+        : 'passwordHash' in rawUser
+          ? AuthService.sanitizeUser(rawUser as User)
+          : rawUser
     const requiresAuth = AuthService.requiresAuthentication(feature)
     const requiredLicense = AuthService.getRequiredLicense(feature)
     return {

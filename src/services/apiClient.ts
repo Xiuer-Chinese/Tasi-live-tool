@@ -30,7 +30,7 @@ async function request<T>(
       body: body ? JSON.stringify(body) : undefined,
     })
     const text = await res.text()
-    let json: T | { detail?: { code?: string; message?: string } } = null
+    let json: T | { detail?: { code?: string; message?: string } } | null = null
     try {
       json = text ? JSON.parse(text) : null
     } catch {

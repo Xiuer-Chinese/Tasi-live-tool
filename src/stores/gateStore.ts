@@ -61,12 +61,13 @@ export const useGateStore = create<GateStore>()(
       },
 
       guardAction: async (actionName: string, options: GuardActionOptions) => {
-        const { action, requireSubscription = false } = options
+        const { requireSubscription = false } = options
+        const pendingFn = options.action != null ? options.action : null
         const isAuthenticated = useAuthStore.getState().isAuthenticated
         const isInTrial = useTrialStore.getState().isInTrial()
 
         if (!isAuthenticated) {
-          get().setPendingAction(action ?? undefined ?? null, actionName)
+          get().setPendingAction(pendingFn, actionName)
           window.dispatchEvent(
             new CustomEvent('auth:required', { detail: { feature: actionName } }),
           )
@@ -74,16 +75,16 @@ export const useGateStore = create<GateStore>()(
         }
 
         if (requireSubscription && !isInTrial) {
-          get().setPendingAction(action ?? undefined ?? null, actionName)
+          get().setPendingAction(pendingFn, actionName)
           window.dispatchEvent(
             new CustomEvent('gate:subscribe-required', { detail: { actionName } }),
           )
           return
         }
 
-        if (action) {
+        if (pendingFn) {
           try {
-            await Promise.resolve(action())
+            await Promise.resolve(pendingFn())
           } catch (e) {
             console.error('[GateStore] guardAction error:', e)
           }
