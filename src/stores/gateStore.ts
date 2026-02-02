@@ -1,13 +1,13 @@
 /**
- * 统一门控：guardAction(actionName, options)
+ * 统一门控：以服务端 /auth/status（userStatus）为准。
  * - 未登录 → 打开登录弹窗，登录成功后执行 pendingAction
- * - 已登录但需订阅且未在试用 → 打开订阅/试用弹窗，点试用后执行 pendingAction
- * - 已登录且在试用/已订阅 → 直接执行 action
+ * - 已登录 status=disabled → 提示账号不可用
+ * - 已登录需订阅且非 pro 且非 trial 有效 → 打开订阅/试用弹窗，点试用后执行 pendingAction
+ * - 已登录且 (plan=pro 或 trial.is_active) → 直接执行 action
  */
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useAuthStore } from '@/stores/authStore'
-import { useTrialStore } from '@/stores/trialStore'
 
 export type GuardActionOptions = {
   /** 通过门控后要执行的回调（可选，登录/试用后会自动执行或用户再次点击） */
@@ -63,8 +63,7 @@ export const useGateStore = create<GateStore>()(
       guardAction: async (actionName: string, options: GuardActionOptions) => {
         const { requireSubscription = false } = options
         const pendingFn = options.action != null ? options.action : null
-        const isAuthenticated = useAuthStore.getState().isAuthenticated
-        const isInTrial = useTrialStore.getState().isInTrial()
+        const { isAuthenticated, userStatus } = useAuthStore.getState()
 
         if (!isAuthenticated) {
           get().setPendingAction(pendingFn, actionName)
@@ -74,7 +73,13 @@ export const useGateStore = create<GateStore>()(
           return
         }
 
-        if (requireSubscription && !isInTrial) {
+        if (userStatus?.status === 'disabled') {
+          window.dispatchEvent(new CustomEvent('auth:account-disabled', { detail: { actionName } }))
+          return
+        }
+
+        const canAccess = userStatus?.plan === 'pro' || userStatus?.trial?.is_active === true
+        if (requireSubscription && !canAccess) {
           get().setPendingAction(pendingFn, actionName)
           window.dispatchEvent(
             new CustomEvent('gate:subscribe-required', { detail: { actionName } }),

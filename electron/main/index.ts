@@ -1,3 +1,6 @@
+// 最早加载 .env，使主进程能读到 AUTH_API_BASE_URL 等（开发时未通过 npm script 注入时兜底）
+import 'dotenv/config'
+
 import { appendFileSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'

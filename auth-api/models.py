@@ -15,7 +15,10 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login_at = Column(DateTime, nullable=True)
-    status = Column(String(20), default="active")  # active | inactive | banned
+    status = Column(String(20), default="active")  # active | disabled
+    plan = Column(String(32), default="free")  # free | trial | pro
+    trial_start_at = Column(DateTime, nullable=True)
+    trial_end_at = Column(DateTime, nullable=True)
 
     refresh_tokens = relationship("RefreshToken", back_populates="user")
     subscription = relationship("Subscription", back_populates="user", uselist=False)

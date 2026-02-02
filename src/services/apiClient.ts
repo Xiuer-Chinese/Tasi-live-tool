@@ -5,6 +5,7 @@
  */
 import { API_BASE_URL } from '@/config/authApi'
 import { useAuthStore } from '@/stores/authStore'
+import type { UserStatus } from '@/types/auth'
 
 export type ApiResult<T = unknown> =
   | { ok: true; data: T; status: number }
@@ -17,6 +18,12 @@ async function request<T>(
   body?: object,
 ): Promise<ApiResult<T>> {
   const url = `${API_BASE_URL.replace(/\/$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+  // [AUTH-AUDIT] 临时审计日志：真正发起 fetch 前打印 process、method、full_url。可删除。
+  const processType =
+    typeof process !== 'undefined' && process && 'type' in process
+      ? (process as { type?: string }).type
+      : 'renderer'
+  console.log('[AUTH-AUDIT]', processType ?? 'renderer', method, url)
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
   }
@@ -37,17 +44,26 @@ async function request<T>(
       // ignore
     }
     if (!res.ok) {
-      const detail =
+      const rawDetail =
         json && typeof json === 'object' && 'detail' in json
-          ? (json as { detail?: { code?: string; message?: string } }).detail
+          ? (json as { detail?: unknown }).detail
+          : undefined
+      let message = text || res.statusText
+      if (typeof rawDetail === 'string') {
+        message = rawDetail
+      } else if (rawDetail && typeof rawDetail === 'object' && 'message' in (rawDetail as object)) {
+        message = (rawDetail as { message?: string }).message ?? message
+      } else if (Array.isArray(rawDetail) && rawDetail.length > 0) {
+        message = (rawDetail as { msg?: string }[]).map(d => d?.msg ?? JSON.stringify(d)).join('; ')
+      }
+      const code =
+        rawDetail && typeof rawDetail === 'object' && 'code' in (rawDetail as object)
+          ? (rawDetail as { code?: string }).code
           : undefined
       return {
         ok: false,
         status: res.status,
-        error:
-          typeof detail === 'object' && detail
-            ? { code: detail.code, message: detail.message }
-            : { message: text || res.statusText },
+        error: { code, message },
       }
     }
     return { ok: true, data: json as T, status: res.status }
@@ -116,4 +132,65 @@ export interface MeResponse {
 
 export async function getMe(): Promise<ApiResult<MeResponse>> {
   return requestWithRefresh<MeResponse>('GET', '/me')
+}
+
+/**
+ * GET /auth/status：获取当前用户状态（只读）。使用 access_token，不做 fallback/mock。
+ * 失败时只记录日志，返回 null，不登出、不弹窗。
+ */
+export async function getUserStatus(): Promise<UserStatus | null> {
+  const result = await requestWithRefresh<UserStatus>('GET', '/auth/status')
+  if (result.ok && result.data) {
+    return result.data
+  }
+  if (!result.ok) {
+    console.warn('[apiClient] getUserStatus failed:', result.status, result.error)
+  }
+  return null
+}
+
+/** 后端 POST /auth/trial/start 返回 */
+export interface TrialStartResponse {
+  success: boolean
+  start_ts?: number
+  end_ts?: number
+}
+
+/** 后端 GET /auth/trial/status 返回 */
+export interface TrialStatusResponse {
+  has_trial: boolean
+  active: boolean
+  start_ts?: number
+  end_ts?: number
+}
+
+/**
+ * POST /auth/trial/start：开启 7 天试用。必须带 Authorization: Bearer <token>，Body 必须包含 { username }。
+ * 从当前登录状态读取 username，不允许空 body。
+ */
+export async function startTrial(): Promise<ApiResult<TrialStartResponse>> {
+  const username = useAuthStore.getState().user?.username
+  if (!username) {
+    return {
+      ok: false,
+      status: 0,
+      error: { message: '未获取到当前用户名，请重新登录' },
+    }
+  }
+  const result = await requestWithRefresh<TrialStartResponse>('POST', '/auth/trial/start', {
+    username,
+  })
+  if (!result.ok) {
+    console.warn('[apiClient] startTrial failed:', result.status, result.error)
+  }
+  return result
+}
+
+/**
+ * GET /auth/trial/status?username=xxx：查询当前用户试用状态。必须带 Authorization。
+ * 返回 { has_trial, active, start_ts, end_ts }。
+ */
+export async function getTrialStatus(username: string): Promise<ApiResult<TrialStatusResponse>> {
+  const path = `/auth/trial/status?username=${encodeURIComponent(username)}`
+  return requestWithRefresh<TrialStatusResponse>('GET', path)
 }

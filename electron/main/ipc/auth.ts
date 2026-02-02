@@ -1,17 +1,38 @@
 import { ipcMain } from 'electron'
+import { AUTH_API_BASE } from '../../../src/config/authApiBase'
 import type { LoginCredentials, RegisterData, SafeUser, User } from '../../../src/types/auth'
 import { AuthService } from '../services/AuthService'
 import { clearStoredTokens, getStoredTokens, setStoredTokens } from '../services/CloudAuthStorage'
 import { cloudLogin, cloudMe, cloudRefresh, cloudRegister } from '../services/cloudAuthClient'
 import { cloudUserToSafeUser } from '../services/cloudAuthMappers'
 
+// 显式鉴权模式开关：USE_REAL_AUTH === 'true' 时强制 USE_MOCK_AUTH = false
 const USE_MOCK_AUTH =
-  process.env.USE_MOCK_AUTH === 'true' ||
-  (process.env.NODE_ENV === 'development' && process.env.USE_REAL_AUTH !== 'true')
+  process.env.USE_REAL_AUTH === 'true'
+    ? false
+    : process.env.USE_MOCK_AUTH === 'true' ||
+      (process.env.NODE_ENV === 'development' && process.env.USE_REAL_AUTH !== 'true')
 
-const USE_CLOUD_AUTH = !!process.env.AUTH_API_BASE_URL || !!process.env.VITE_AUTH_API_BASE_URL
+const getEffectiveBase = (): string =>
+  (process.env.AUTH_API_BASE_URL ?? process.env.VITE_AUTH_API_BASE_URL ?? AUTH_API_BASE).replace(
+    /\/$/,
+    '',
+  )
+const USE_CLOUD_AUTH = !!getEffectiveBase()
+
+/** [AUTH-AUDIT] 启动时打印当前鉴权配置 */
+function logAuthAuditConfig(): void {
+  const base = getEffectiveBase() || '(none)'
+  console.log('[AUTH-AUDIT] startup config:', {
+    USE_MOCK_AUTH,
+    USE_CLOUD_AUTH,
+    AUTH_API_BASE,
+    effectiveBase: base,
+  })
+}
 
 export function setupAuthHandlers() {
+  logAuthAuditConfig()
   // ----- 云鉴权：恢复会话（启动时 refresh -> me） -----
   ipcMain.handle('auth:restoreSession', async () => {
     if (!USE_CLOUD_AUTH) {
@@ -51,21 +72,27 @@ export function setupAuthHandlers() {
       }
       const res = await cloudRegister(identifier, data.password)
       if (!res.success) {
-        return { success: false, error: res.error }
+        return {
+          success: false,
+          error: res.error,
+          requestUrl: res.requestUrl,
+          status: res.status,
+          detail: res.responseDetail,
+        }
       }
-      if (res.access_token && res.refresh_token && res.user) {
+      // 成功条件与后端一致：res.status==200 且 res.data.success===true；不要求 user/access_token/refresh_token 全有
+      if (res.access_token && res.refresh_token) {
         setStoredTokens({
           access_token: res.access_token,
           refresh_token: res.refresh_token,
         })
-        return {
-          success: true,
-          user: cloudUserToSafeUser(res.user),
-          token: res.access_token,
-          refresh_token: res.refresh_token,
-        }
       }
-      return { success: false, error: res.error }
+      return {
+        success: true,
+        user: res.user ? cloudUserToSafeUser(res.user) : undefined,
+        token: res.access_token,
+        refresh_token: res.refresh_token,
+      }
     }
     return await AuthService.register(data)
   })
@@ -82,21 +109,27 @@ export function setupAuthHandlers() {
       }
       const res = await cloudLogin(identifier, credentials.password)
       if (!res.success) {
-        return { success: false, error: res.error }
-      }
-      if (res.access_token && res.refresh_token && res.user) {
-        setStoredTokens({
-          access_token: res.access_token,
-          refresh_token: res.refresh_token,
-        })
         return {
-          success: true,
-          user: cloudUserToSafeUser(res.user),
-          token: res.access_token,
-          refresh_token: res.refresh_token,
+          success: false,
+          error: res.error,
+          requestUrl: res.requestUrl,
+          status: res.status,
+          detail: res.responseDetail,
         }
       }
-      return { success: false, error: res.error }
+      // 成功条件与后端一致：res.status==200 且 res.data.token 存在；不要求 refresh_token/user 全有
+      if (res.access_token) {
+        setStoredTokens({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token ?? res.access_token,
+        })
+      }
+      return {
+        success: true,
+        user: res.user ? cloudUserToSafeUser(res.user) : undefined,
+        token: res.access_token,
+        refresh_token: res.refresh_token ?? res.access_token,
+      }
     }
     return await AuthService.login(credentials)
   })

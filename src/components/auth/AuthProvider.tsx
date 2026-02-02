@@ -7,11 +7,13 @@ import { useAccounts } from '@/hooks/useAccounts'
 import { useAuthInit } from '@/hooks/useAuth'
 import { useLiveControlStore } from '@/hooks/useLiveControl'
 import { useToast } from '@/hooks/useToast'
-import { useAuthCheckDone, useIsAuthenticated, useIsOffline } from '@/stores/authStore'
+import {
+  useAuthCheckDone,
+  useAuthStore,
+  useIsAuthenticated,
+  useIsOffline,
+} from '@/stores/authStore'
 import { useGateStore } from '@/stores/gateStore'
-import { useTrialStore } from '@/stores/trialStore'
-
-const TRIAL_EXPIRED_TOAST_KEY = 'trialExpiredToastShown'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [showAuthDialog, setShowAuthDialog] = useState(false)
@@ -23,8 +25,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const authCheckDone = useAuthCheckDone()
   const isAuthenticated = useIsAuthenticated()
   const isOffline = useIsOffline()
+  const userStatus = useAuthStore(s => s.userStatus)
   const { runPendingActionAndClear } = useGateStore()
   const { toast } = useToast()
+  const trialExpiredModalShownRef = useRef(false)
 
   useAuthInit()
 
@@ -56,6 +60,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       alert(message)
     }
 
+    const handleAccountDisabled = () => {
+      toast.error('账号不可用')
+    }
+
     const handleUserCenterOpen = () => {
       setShowUserCenter(true)
     }
@@ -64,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.addEventListener('auth:success', handleAuthSuccess as EventListener)
     window.addEventListener('gate:subscribe-required', handleSubscribeRequired as EventListener)
     window.addEventListener('auth:license-required', handleLicenseRequired as EventListener)
+    window.addEventListener('auth:account-disabled', handleAccountDisabled as EventListener)
     window.addEventListener('auth:user-center', handleUserCenterOpen as EventListener)
 
     return () => {
@@ -74,20 +83,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         handleSubscribeRequired as EventListener,
       )
       window.removeEventListener('auth:license-required', handleLicenseRequired as EventListener)
+      window.removeEventListener('auth:account-disabled', handleAccountDisabled as EventListener)
       window.removeEventListener('auth:user-center', handleUserCenterOpen as EventListener)
     }
   }, [runPendingActionAndClear, toast])
 
-  // 试用已结束：启动时一次性提示
+  // 试用已结束（以服务端 userStatus 为准）：进入主界面后自动弹一次订阅弹窗
   useEffect(() => {
-    if (!authCheckDone || trialExpiredShownRef.current) return
-    const isTrialExpiredFn = useTrialStore.getState().isTrialExpired
-    if (typeof isTrialExpiredFn !== 'function' || !isTrialExpiredFn()) return
-    if (sessionStorage.getItem(TRIAL_EXPIRED_TOAST_KEY)) return
-    trialExpiredShownRef.current = true
-    sessionStorage.setItem(TRIAL_EXPIRED_TOAST_KEY, '1')
-    toast.success('试用已结束，开通后可继续使用')
-  }, [authCheckDone, toast])
+    if (!authCheckDone || !userStatus || trialExpiredModalShownRef.current) return
+    if (userStatus.trial?.is_expired !== true || userStatus.plan === 'pro') return
+    trialExpiredModalShownRef.current = true
+    setShowSubscribeDialog(true)
+  }, [authCheckDone, userStatus])
 
   if (!authCheckDone) {
     return (
@@ -128,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isOpen={showSubscribeDialog}
         onClose={() => setShowSubscribeDialog(false)}
         actionName={useGateStore.getState().pendingActionName || undefined}
+        trialExpired={userStatus?.trial?.is_expired === true && userStatus?.plan !== 'pro'}
       />
       <UserCenter isOpen={showUserCenter} onClose={() => setShowUserCenter(false)} />
     </>

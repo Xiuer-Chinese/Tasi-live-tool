@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import { getMe } from '../services/apiClient'
+import { getMe, getTrialStatus, getUserStatus, startTrial } from '../services/apiClient'
 import { MockAuthService } from '../services/MockAuthService'
 import type {
   AuthResponse,
@@ -8,6 +8,7 @@ import type {
   LoginCredentials,
   RegisterData,
   SafeUser,
+  UserStatus,
 } from '../types/auth'
 
 /** authAPI 可能返回的 Mock 标记（用于降级到 MockAuthService） */
@@ -37,6 +38,8 @@ interface AuthStore extends AuthState {
   authCheckDone: boolean
   /** 有 token 但 /me 非 401 失败（断网/5xx）：保持已登录，仅提示离线 */
   isOffline: boolean
+  /** GET /auth/status 返回的用户状态（只读感知，不做限制） */
+  userStatus: UserStatus | null
   // Actions
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>
@@ -48,6 +51,13 @@ interface AuthStore extends AuthState {
   setRefreshToken: (refreshToken: string | null) => void
   /** refresh 失败时由 apiClient 调用：清空 token/refreshToken，回到登录页 */
   clearTokensAndUnauth: () => void
+  setUserStatus: (userStatus: UserStatus | null) => void
+  /** 拉取 /auth/status 并写入 store */
+  refreshUserStatus: () => Promise<UserStatus | null>
+  /** 调用 POST /auth/trial/start，成功则写入 userStatus；失败不改登录态，返回 errorCode（如 trial_already_used）供弹窗提示 */
+  startTrialAndRefresh: () => Promise<
+    { success: true; status: UserStatus } | { success: false; errorCode?: string; message?: string }
+  >
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
@@ -65,10 +75,17 @@ export const useAuthStore = create<AuthStore>()(
       error: null,
       authCheckDone: false,
       isOffline: false,
+      userStatus: null,
 
       // Login action
       login: async (credentials: LoginCredentials) => {
         set({ isLoading: true, error: null })
+        const requestId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+        console.log(`[AuthStore] Login request [${requestId}]:`, {
+          url: '(main process)',
+          method: 'POST',
+          body: { username: credentials.username, password: '***' },
+        })
 
         try {
           let response = (await window.authAPI.login(credentials)) as LoginResponseWithMock
@@ -81,27 +98,55 @@ export const useAuthStore = create<AuthStore>()(
             )) as LoginResponseWithMock
           }
 
+          console.log(`[AuthStore] Login response [${requestId}]:`, {
+            success: response.success,
+            hasToken: !!response.token,
+            status: (response as { status?: number }).status,
+            detail:
+              (response as { detail?: string }).detail ??
+              (response as { error?: string }).error ??
+              null,
+          })
+
           const refreshToken = response.refresh_token ?? null
-          if (response.success && response.user && response.token) {
+          // 成功条件与后端一致：status==200 且 res.data.token 存在；不依赖 hasUser
+          if (response.success && response.token) {
+            const user = response.user ?? safeUserFromUsername(credentials.username)
             set({
               isAuthenticated: true,
-              user: response.user,
+              user,
               token: response.token,
               refreshToken: refreshToken ?? get().refreshToken,
               isLoading: false,
               error: null,
             })
+            getUserStatus()
+              .then(status => {
+                if (status) {
+                  get().setUserStatus(status)
+                  console.log('[USER-STATUS]', status)
+                }
+              })
+              .catch(() => {})
             return { success: true }
           }
+          const status = (response as { status?: number }).status
+          const detail = (response as { detail?: string }).detail ?? response.error ?? ''
+          const requestUrl = (response as { requestUrl?: string }).requestUrl
+          const errWithObservability =
+            typeof status === 'number'
+              ? `登录失败（${status}）：${detail || '(无详情)'}${typeof requestUrl === 'string' ? `（请求地址：${requestUrl}）` : ''}`
+              : (detail || '登录失败') +
+                (typeof requestUrl === 'string' ? ` (请求地址: ${requestUrl})` : '')
           set({
             isAuthenticated: false,
             user: null,
             token: null,
             refreshToken: null,
             isLoading: false,
-            error: response.error || '登录失败',
+            error: errWithObservability,
           })
-          return { success: false, error: response.error }
+          return { success: false, error: errWithObservability }
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : '登录失败'
           set({
@@ -161,29 +206,45 @@ export const useAuthStore = create<AuthStore>()(
             )) as RegisterResponseWithMock
           }
 
-          // 【步骤B】记录响应信息
+          // 【步骤B】记录响应信息（证据链：与后端一致，不看 hasUser/hasToken）
           console.log(`[AuthStore] Register response [${requestId}]:`, {
             success: response.success,
-            hasUser: !!response.user,
-            hasToken: !!response.token,
-            error: response.error || null,
+            status: (response as { status?: number }).status,
+            responseData: {
+              success: response.success,
+              user: !!response.user,
+              token: !!response.token,
+            },
           })
 
           const refreshToken = response.refresh_token ?? null
-          if (response.success && response.user && response.token) {
-            set({
-              isAuthenticated: true,
-              user: response.user,
-              token: response.token,
-              refreshToken: refreshToken ?? get().refreshToken,
-              isLoading: false,
-              error: null,
-            })
+          // 成功条件与后端一致：res.status==200 且 res.data.success===true；不依赖 user/token
+          if (response.success) {
+            if (response.token && response.user) {
+              set({
+                isAuthenticated: true,
+                user: response.user,
+                token: response.token,
+                refreshToken: refreshToken ?? get().refreshToken,
+                isLoading: false,
+                error: null,
+              })
+            } else {
+              set({ isLoading: false, error: null })
+            }
             console.log(`[AuthStore] Register success [${requestId}]`)
             return { success: true }
           }
-          // 【步骤B】统一错误处理：优先显示后端返回的 error 字段
-          const errorMessage = extractErrorMessage(response, '注册失败')
+          // 【步骤B】统一错误处理：展示 status + 后端 detail + requestUrl，不允许只显示「注册失败」
+          const status = (response as { status?: number }).status
+          const detail =
+            (response as { detail?: string }).detail ?? extractErrorMessage(response, '') ?? ''
+          const requestUrl = (response as { requestUrl?: string }).requestUrl
+          const errorMessage =
+            typeof status === 'number'
+              ? `注册失败（${status}）：${detail || '(无详情)'}${typeof requestUrl === 'string' ? `（请求地址：${requestUrl}）` : ''}`
+              : (detail || '注册失败') +
+                (typeof requestUrl === 'string' ? ` (请求地址: ${requestUrl})` : '')
           console.error(`[AuthStore] Register failed [${requestId}]:`, {
             error: errorMessage,
             response: response,
@@ -259,6 +320,7 @@ export const useAuthStore = create<AuthStore>()(
             user: null,
             token: null,
             refreshToken: null,
+            userStatus: null,
             isLoading: false,
             error: null,
             isOffline: false,
@@ -293,6 +355,14 @@ export const useAuthStore = create<AuthStore>()(
             isOffline: false,
             error: null,
           })
+          getUserStatus()
+            .then(status => {
+              if (status) {
+                get().setUserStatus(status)
+                console.log('[USER-STATUS]', status)
+              }
+            })
+            .catch(() => {})
           return
         }
 
@@ -326,8 +396,64 @@ export const useAuthStore = create<AuthStore>()(
           user: null,
           token: null,
           refreshToken: null,
+          userStatus: null,
           isOffline: false,
         }),
+
+      setUserStatus: (userStatus: UserStatus | null) => set({ userStatus }),
+
+      refreshUserStatus: async () => {
+        const status = await getUserStatus()
+        if (status) set({ userStatus: status })
+        return status
+      },
+
+      startTrialAndRefresh: async () => {
+        const token = get().token
+        if (!token) {
+          return { success: false as const, message: '请先登录' }
+        }
+        const result = await startTrial()
+        if (!result.ok) {
+          return {
+            success: false as const,
+            errorCode: result.error?.code,
+            message: result.error?.message ?? `请求失败（${result.status}）`,
+          }
+        }
+        if (!result.data?.success) {
+          return { success: false as const, message: '开通试用失败' }
+        }
+        const username = get().user?.username ?? ''
+        const statusResult = await getTrialStatus(username)
+        const statusData = statusResult.ok ? statusResult.data : null
+        const userStatus: UserStatus = statusData
+          ? {
+              username: get().user?.username ?? username,
+              status: 'active',
+              plan: statusData.active ? 'trial' : 'free',
+              trial: {
+                start_at:
+                  statusData.start_ts != null
+                    ? new Date(statusData.start_ts * 1000).toISOString()
+                    : null,
+                end_at:
+                  statusData.end_ts != null
+                    ? new Date(statusData.end_ts * 1000).toISOString()
+                    : null,
+                is_active: statusData.active,
+                is_expired: statusData.has_trial && !statusData.active,
+              },
+            }
+          : {
+              username: get().user?.username ?? username,
+              status: 'active',
+              plan: 'trial',
+              trial: { is_active: true },
+            }
+        set({ userStatus })
+        return { success: true as const, status: userStatus }
+      },
 
       // Set loading state
       setLoading: (loading: boolean) => set({ isLoading: loading }),

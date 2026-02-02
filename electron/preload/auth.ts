@@ -1,11 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { User } from '../../src/types/auth'
 
-// 检查是否使用 Mock 认证服务
-// 默认在开发环境使用 Mock，生产环境使用真实后端
+// 显式鉴权模式开关：USE_REAL_AUTH === 'true' 时强制不走 Mock，preload 不得短路 __useMock
+// Mock 仅在 USE_MOCK_AUTH === true 时生效
 const USE_MOCK_AUTH =
-  process.env.USE_MOCK_AUTH === 'true' ||
-  (process.env.NODE_ENV === 'development' && process.env.USE_REAL_AUTH !== 'true')
+  process.env.USE_REAL_AUTH === 'true'
+    ? false
+    : process.env.USE_MOCK_AUTH === 'true' ||
+      (process.env.NODE_ENV === 'development' && process.env.USE_REAL_AUTH !== 'true')
 
 export const authAPI = {
   // Authentication

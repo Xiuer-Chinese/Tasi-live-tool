@@ -1,18 +1,25 @@
-"""请求/响应 Pydantic 模型，预留订阅字段"""
+"""请求/响应 Pydantic 模型，预留订阅字段。
+登录/注册请求体兼容 username 与 identifier 二选一（Pydantic v2：validation_alias=AliasChoices）。
+"""
 from datetime import datetime
 from typing import Any, List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import AliasChoices, BaseModel, Field
 
 
-# ----- 请求 -----
+# ----- 请求（兼容 username / identifier，统一为 username 供路由使用） -----
+def _username_field(**kwargs: Any) -> Any:
+    """邮箱或手机号：请求体可传 username 或 identifier，内部统一为 username。"""
+    return Field(..., description="邮箱或手机号", validation_alias=AliasChoices("username", "identifier"), **kwargs)
+
+
 class RegisterBody(BaseModel):
-    identifier: str = Field(..., description="邮箱或手机号")
+    username: str = _username_field()
     password: str = Field(..., min_length=6)
 
 
 class LoginBody(BaseModel):
-    identifier: str
+    username: str = _username_field()
     password: str
 
 
@@ -64,6 +71,23 @@ class RefreshResponse(BaseModel):
 class MeResponse(BaseModel):
     user: UserOut
     subscription: SubscriptionOut
+
+
+# ----- GET /auth/status（用户状态，只读） -----
+class TrialOut(BaseModel):
+    start_at: Optional[str] = None
+    end_at: Optional[str] = None
+    is_active: bool = False
+    is_expired: bool = False
+
+
+class UserStatusResponse(BaseModel):
+    username: str
+    status: str = "active"
+    plan: str = "free"
+    created_at: Optional[str] = None
+    last_login_at: Optional[str] = None
+    trial: Optional[TrialOut] = None
 
 
 # ----- 错误规范 -----

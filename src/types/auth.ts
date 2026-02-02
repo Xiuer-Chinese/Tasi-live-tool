@@ -114,3 +114,18 @@ export interface CloudErrorDetail {
   code: string
   message: string
 }
+
+/** GET /auth/status 返回：用户状态（只读感知，含 trial） */
+export interface UserStatus {
+  username: string
+  status: 'active' | 'disabled'
+  plan: 'free' | 'trial' | 'pro'
+  created_at?: string
+  last_login_at?: string
+  trial?: {
+    start_at?: string | null
+    end_at?: string | null
+    is_active?: boolean
+    is_expired?: boolean
+  }
+}

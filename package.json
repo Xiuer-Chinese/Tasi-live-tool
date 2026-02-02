@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "cross-env USE_REAL_AUTH=true USE_MOCK_AUTH=false AUTH_API_BASE_URL=http://121.41.179.197:8000 VITE_AUTH_API_BASE_URL=http://121.41.179.197:8000 vite",
     "dev:force": "node -e \"require('fs').rmSync('dist-electron',{recursive:true,force:true})\" && vite",
     "build": "tsc && vite build && node -e \"const fs=require('fs'); const p='dist-electron/main/runtime'; fs.mkdirSync(p,{recursive:true}); fs.copyFileSync('electron/main/runtime/load-playwright.cjs', p+'/load-playwright.cjs'); if(!fs.existsSync(p+'/load-playwright.cjs')){console.error('FATAL: dist-electron/main/runtime/load-playwright.cjs not found after build'); process.exit(1)}\"",
     "build-exe": "npm run build && electron-builder --publish never",
@@ -83,6 +83,7 @@
     "bumpp": "^10.0.1",
     "changelogen": "^0.6.1",
     "class-variance-authority": "^0.7.1",
+    "cross-env": "^7.0.3",
     "clsx": "^2.1.1",
     "dompurify": "^3.2.6",
     "dotenv": "17.2.3",
