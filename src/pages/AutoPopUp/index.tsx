@@ -3,11 +3,11 @@ import { Title } from '@/components/common/Title'
 import { GateButton } from '@/components/GateButton'
 import { CarbonPlayFilledAlt, CarbonStopFilledAlt } from '@/components/icons/carbon'
 import { useAccounts } from '@/hooks/useAccounts'
-import { useRequireAuthForAction } from '@/hooks/useAuth'
 import { useAutoPopUpActions, useCurrentAutoPopUp, useShortcutListener } from '@/hooks/useAutoPopUp'
 import { useAutoStopOnGateLoss } from '@/hooks/useAutoStopOnGateLoss'
 import { useLiveFeatureGate } from '@/hooks/useLiveFeatureGate'
 import { useTaskControl } from '@/hooks/useTaskControl'
+import { useGateStore } from '@/stores/gateStore'
 import { stopAllLiveTasks } from '@/utils/stopAllLiveTasks'
 import GoodsListCard from './components/GoodsListCard'
 import PopUpSettingsCard from './components/PopUpSettingsCard'
@@ -41,14 +41,15 @@ export default function AutoPopUp() {
     }),
   })
 
-  // 引入登录检查 Hook
-  const { requireAuthForAction } = useRequireAuthForAction('auto-popup')
+  const guardAction = useGateStore(s => s.guardAction)
 
   const handleTaskButtonClick = useMemoizedFn(async () => {
     if (!isRunning) {
-      // 启动任务：先检查登录，然后执行启动逻辑
-      await requireAuthForAction(async () => {
-        onStartTask()
+      await guardAction('auto-popup', {
+        requireSubscription: true,
+        action: () => {
+          onStartTask()
+        },
       })
     } else {
       // 停止任务（不需要登录检查）

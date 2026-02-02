@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCurrentLiveControl, useCurrentLiveControlActions } from '@/hooks/useLiveControl'
+import { useGateStore } from '@/stores/gateStore'
 
 const basePlatforms: Record<string, string> = {
   douyin: '抖音小店',
@@ -21,22 +22,27 @@ const basePlatforms: Record<string, string> = {
   dev: '测试平台',
 }
 
-const platforms = (() => {
-  const isDev = process.env.NODE_ENV === 'development'
-  if (isDev) {
-    return basePlatforms
-  }
-  const { dev: _, ...productionPlatforms } = basePlatforms
-  return productionPlatforms
-})()
+// 正式发行版也包含测试平台，便于用户试用体验
+const platforms = basePlatforms
 
 const PlatformSelect = React.memo(() => {
   const connectState = useCurrentLiveControl(context => context.connectState)
   const { setPlatform } = useCurrentLiveControlActions()
+  const guardAction = useGateStore(s => s.guardAction)
 
   const handlePlatformChange = useMemoizedFn((newPlatform: string) => {
-    console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
-    setPlatform(newPlatform)
+    if (newPlatform === 'dev') {
+      console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
+      setPlatform(newPlatform)
+      return
+    }
+    guardAction('platform-switch', {
+      requireSubscription: true,
+      action: () => {
+        console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
+        setPlatform(newPlatform)
+      },
+    })
   })
 
   return (

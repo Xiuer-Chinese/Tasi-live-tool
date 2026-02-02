@@ -257,7 +257,7 @@
         createApp({
             setup() {
                 // --- 状态 ---
-                const isLoggedIn = ref(Math.random() < 0.5);
+                const isLoggedIn = ref(false);
                 const isLive = ref(false); // 新增：直播状态
                 const loginForm = reactive({ username: '超级管理员' });
                 const hostInput = ref('');
@@ -405,6 +405,16 @@
                 const stopFakeInteraction = () => {
                     if (timer) clearInterval(timer);
                 };
+
+                onMounted(() => {
+                    if (isLoggedIn.value && products.value.length === 0) {
+                        generateProducts();
+                        nextTick(() => {
+                            if (listContainer.value) containerHeight.value = listContainer.value.clientHeight;
+                            window.addEventListener('resize', updateContainerHeight);
+                        });
+                    }
+                });
 
                 onUnmounted(() => {
                     stopFakeInteraction();

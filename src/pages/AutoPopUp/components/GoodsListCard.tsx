@@ -1,5 +1,5 @@
 import { useMemoizedFn } from 'ahooks'
-import { PlusIcon, TestTubeIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -57,20 +57,6 @@ const CommonList = () => {
     setGoodsIds([...goodsIds, id])
   })
 
-  const injectMockGoods = useMemoizedFn(() => {
-    // 注入测试商品 ID（如果已存在则不重复添加）
-    const existingIds = new Set(goodsIds)
-    const newIds = [...goodsIds]
-    for (const mockId of MOCK_GOODS_IDS) {
-      if (!existingIds.has(mockId)) {
-        newIds.push(mockId)
-        existingIds.add(mockId)
-      }
-    }
-    setGoodsIds(newIds)
-    toast.success(`已注入 ${MOCK_GOODS_IDS.length} 个测试商品`)
-  })
-
   return (
     <>
       <div className="flex items-center justify-between">
@@ -79,20 +65,6 @@ const CommonList = () => {
           <p className="text-sm text-muted-foreground">添加需要自动弹出的商品序号</p>
         </div>
         <div className="flex gap-2">
-          {/* 【测试模式按钮】仅在测试平台或开发模式下显示 */}
-          {/* 生产环境（MODE=production）时 isTestMode 为 false，此按钮不会渲染 */}
-          {isTestMode && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={injectMockGoods}
-              className="border-orange-300 text-orange-600 hover:bg-orange-50"
-              title="仅测试模式：注入测试商品数据（生产环境不可用）"
-            >
-              <TestTubeIcon className="mr-2 h-4 w-4" />
-              <span className="text-xs">[测试] 注入商品</span>
-            </Button>
-          )}
           <Button variant="outline" size="sm" onClick={addGoodsId}>
             <PlusIcon className="mr-2 h-4 w-4" />
             添加商品

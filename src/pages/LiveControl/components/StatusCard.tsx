@@ -9,7 +9,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { useAccounts } from '@/hooks/useAccounts'
-import { useRequireAuthForAction } from '@/hooks/useAuth'
 import { useCurrentChromeConfig, useCurrentChromeConfigActions } from '@/hooks/useChromeConfig'
 import {
   useCurrentLiveControl,
@@ -17,6 +16,7 @@ import {
   useLiveControlStore,
 } from '@/hooks/useLiveControl'
 import { useToast } from '@/hooks/useToast'
+import { useGateStore } from '@/stores/gateStore'
 import PlatformSelect from './PlatformSelect'
 
 const StatusAlert = React.memo(() => {
@@ -155,53 +155,75 @@ const ConnectToLiveControl = React.memo(() => {
     }
   }, [connectState.status, setConnectState, toast])
 
-  // 引入登录检查 Hook
-  const { requireAuthForAction } = useRequireAuthForAction('connect-live-control')
+  const guardAction = useGateStore(s => s.guardAction)
 
   const connectLiveControl = useMemoizedFn(async () => {
-    // 使用 requireAuthForAction 包装连接操作
-    await requireAuthForAction(async () => {
-      try {
-        if (!account) {
-          toast.error('找不到对应账号')
-          return
-        }
+    await guardAction('connect-live-control', {
+      requireSubscription: true,
+      action: async () => {
+        try {
+          if (!account) {
+            toast.error('找不到对应账号')
+            return
+          }
 
-        // 清理之前的超时定时器
-        if (loginTimeoutRef.current) {
-          clearTimeout(loginTimeoutRef.current)
-          loginTimeoutRef.current = null
-        }
+          // 清理之前的超时定时器
+          if (loginTimeoutRef.current) {
+            clearTimeout(loginTimeoutRef.current)
+            loginTimeoutRef.current = null
+          }
 
-        // 打印选中的平台ID
-        console.log('[State Machine] selectedPlatformId:', connectState.platform)
+          // 打印选中的平台ID
+          console.log('[State Machine] selectedPlatformId:', connectState.platform)
 
-        // 状态迁移：disconnected → connecting
-        console.log('[State Machine] Status transition:', connectState.status, '→ connecting')
-        setConnectState({
-          status: 'connecting',
-          error: null,
-          lastVerifiedAt: null,
-        })
+          // 状态迁移：disconnected → connecting
+          console.log('[State Machine] Status transition:', connectState.status, '→ connecting')
+          setConnectState({
+            status: 'connecting',
+            error: null,
+            lastVerifiedAt: null,
+          })
 
-        type ConnectResult = { browserLaunched?: boolean; error?: string }
-        const result = (await window.ipcRenderer.invoke(IPC_CHANNELS.tasks.liveControl.connect, {
-          headless,
-          chromePath,
-          storageState,
-          platform: connectState.platform as LiveControlPlatform,
-          account,
-        })) as ConnectResult
+          type ConnectResult = { browserLaunched?: boolean; error?: string }
+          const result = (await window.ipcRenderer.invoke(IPC_CHANNELS.tasks.liveControl.connect, {
+            headless,
+            chromePath,
+            storageState,
+            platform: connectState.platform as LiveControlPlatform,
+            account,
+          })) as ConnectResult
 
-        console.log('[Connect] IPC result:', result)
+          console.log('[Connect] IPC result:', result)
 
-        // 浏览器启动失败是非致命错误，只显示警告，不改变状态
-        if (result && !result.browserLaunched) {
-          console.warn('[State Machine] Browser launch warning (non-fatal):', result.error)
-          toast.error(result.error || '启动浏览器时出现问题，但连接流程将继续')
-          // 保持 connecting 状态，等待登录成功事件
-          // 仍然设置超时，因为可能浏览器实际上已经打开了
+          // 浏览器启动失败是非致命错误，只显示警告，不改变状态
+          if (result && !result.browserLaunched) {
+            console.warn('[State Machine] Browser launch warning (non-fatal):', result.error)
+            toast.error(result.error || '启动浏览器时出现问题，但连接流程将继续')
+            // 保持 connecting 状态，等待登录成功事件
+            // 仍然设置超时，因为可能浏览器实际上已经打开了
+            loginTimeoutRef.current = setTimeout(() => {
+              const currentState = connectState.status
+              if (currentState === 'connecting') {
+                console.log('[State Machine] Login timeout, status transition: connecting → error')
+                setConnectState({
+                  status: 'error',
+                  error: '登录超时，请检查是否已完成扫码登录',
+                })
+                toast.error('登录超时，请重试')
+              }
+              loginTimeoutRef.current = null
+            }, 60000)
+            return
+          }
+
+          // 浏览器已启动，等待登录成功事件（通过 notifyAccountName 触发）
+          // 状态保持为 connecting，直到收到登录成功事件或超时
+          console.log('[State Machine] Browser launched, waiting for login success event...')
+
+          // 设置超时：如果60秒内没有收到登录成功事件，才设置为错误
           loginTimeoutRef.current = setTimeout(() => {
+            // 只有在仍然是 connecting 状态时才设置为错误
+            // 如果已经变为 connected，说明登录成功了，不需要处理
             const currentState = connectState.status
             if (currentState === 'connecting') {
               console.log('[State Machine] Login timeout, status transition: connecting → error')
@@ -212,53 +234,32 @@ const ConnectToLiveControl = React.memo(() => {
               toast.error('登录超时，请重试')
             }
             loginTimeoutRef.current = null
+          }, 60000) // 60秒超时
+        } catch (error) {
+          console.error('[State Machine] Connection failed:', error)
+          // 只有在严重错误时才设置为 error
+          // 普通错误保持 connecting 状态，等待登录成功
+          const errorMessage = error instanceof Error ? error.message : '连接失败'
+          console.log('[State Machine] Connection error (non-fatal warning):', errorMessage)
+          toast.error(`${errorMessage}，但连接流程将继续`)
+          // 不改变状态，保持 connecting，等待登录成功事件
+          // 仍然设置超时
+          loginTimeoutRef.current = setTimeout(() => {
+            const currentState = connectState.status
+            if (currentState === 'connecting') {
+              console.log(
+                '[State Machine] Login timeout after error, status transition: connecting → error',
+              )
+              setConnectState({
+                status: 'error',
+                error: '登录超时，请检查是否已完成扫码登录',
+              })
+              toast.error('登录超时，请重试')
+            }
+            loginTimeoutRef.current = null
           }, 60000)
-          return
         }
-
-        // 浏览器已启动，等待登录成功事件（通过 notifyAccountName 触发）
-        // 状态保持为 connecting，直到收到登录成功事件或超时
-        console.log('[State Machine] Browser launched, waiting for login success event...')
-
-        // 设置超时：如果60秒内没有收到登录成功事件，才设置为错误
-        loginTimeoutRef.current = setTimeout(() => {
-          // 只有在仍然是 connecting 状态时才设置为错误
-          // 如果已经变为 connected，说明登录成功了，不需要处理
-          const currentState = connectState.status
-          if (currentState === 'connecting') {
-            console.log('[State Machine] Login timeout, status transition: connecting → error')
-            setConnectState({
-              status: 'error',
-              error: '登录超时，请检查是否已完成扫码登录',
-            })
-            toast.error('登录超时，请重试')
-          }
-          loginTimeoutRef.current = null
-        }, 60000) // 60秒超时
-      } catch (error) {
-        console.error('[State Machine] Connection failed:', error)
-        // 只有在严重错误时才设置为 error
-        // 普通错误保持 connecting 状态，等待登录成功
-        const errorMessage = error instanceof Error ? error.message : '连接失败'
-        console.log('[State Machine] Connection error (non-fatal warning):', errorMessage)
-        toast.error(`${errorMessage}，但连接流程将继续`)
-        // 不改变状态，保持 connecting，等待登录成功事件
-        // 仍然设置超时
-        loginTimeoutRef.current = setTimeout(() => {
-          const currentState = connectState.status
-          if (currentState === 'connecting') {
-            console.log(
-              '[State Machine] Login timeout after error, status transition: connecting → error',
-            )
-            setConnectState({
-              status: 'error',
-              error: '登录超时，请检查是否已完成扫码登录',
-            })
-            toast.error('登录超时，请重试')
-          }
-          loginTimeoutRef.current = null
-        }, 60000)
-      }
+      },
     })
   })
 

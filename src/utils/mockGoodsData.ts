@@ -46,28 +46,18 @@ export function shouldUseMockGoods(platform: string | undefined): boolean {
     return false
   }
 
-  // 严格检查：生产环境始终禁用 Mock 数据
-  // Vite 构建时，MODE 会被设置为 'production'
+  // 正式发行版下测试平台也可用 Mock 商品，便于用户试用体验
+  if (platform === 'dev') {
+    return true
+  }
+
+  // 非测试平台：生产环境禁用 Mock
   const isProduction = import.meta.env.MODE === 'production'
   if (isProduction) {
-    console.warn('[MockGoods] Production mode detected, Mock goods disabled')
     return false
   }
 
-  // 开发模式检查：Vite 开发服务器时 DEV === true
+  // 开发模式下其他平台不启用 Mock（仅 dev 平台已在上方处理）
   const isDev = import.meta.env.DEV === true
-
-  // 测试平台检查：platform === 'dev' 表示使用测试平台
-  const isTestPlatform = platform === 'dev'
-
-  // 仅在测试平台或开发模式下启用
-  const shouldEnable = isTestPlatform || isDev
-
-  if (shouldEnable) {
-    console.log(
-      `[MockGoods] Mock goods enabled: platform=${platform}, DEV=${isDev}, MODE=${import.meta.env.MODE}`,
-    )
-  }
-
-  return shouldEnable
+  return isDev
 }

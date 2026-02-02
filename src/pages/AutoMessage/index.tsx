@@ -2,10 +2,10 @@ import { useMemoizedFn } from 'ahooks'
 import { Title } from '@/components/common/Title'
 import { GateButton } from '@/components/GateButton'
 import { CarbonPlayFilledAlt, CarbonStopFilledAlt } from '@/components/icons/carbon'
-import { useRequireAuthForAction } from '@/hooks/useAuth'
 import { useCurrentAutoMessage } from '@/hooks/useAutoMessage'
 import { useLiveFeatureGate } from '@/hooks/useLiveFeatureGate'
 import { useTaskManager } from '@/hooks/useTaskManager'
+import { useGateStore } from '@/stores/gateStore'
 import MessageListCard from './components/MessageListCard'
 import MessageSettingsCard from './components/MessageSettingsCard'
 import { MessageOneKey } from './components/MessagesOneKey'
@@ -16,14 +16,15 @@ export default function AutoMessage() {
   // 状态源：使用 store 的 isRunning（与左侧绿点一致）
   const isRunning = useCurrentAutoMessage(context => context.isRunning)
 
-  // 引入登录检查 Hook
-  const { requireAuthForAction } = useRequireAuthForAction('auto-speak')
+  const guardAction = useGateStore(s => s.guardAction)
 
   const handleTaskButtonClick = useMemoizedFn(async () => {
     if (!isRunning) {
-      // 启动任务：先检查登录，然后执行启动逻辑
-      await requireAuthForAction(async () => {
-        await startTask('autoSpeak')
+      await guardAction('auto-speak', {
+        requireSubscription: true,
+        action: async () => {
+          await startTask('autoSpeak')
+        },
       })
     } else {
       // 停止任务（不需要登录检查）
