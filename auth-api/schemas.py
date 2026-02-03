@@ -62,6 +62,13 @@ class AuthResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class LoginResponse(BaseModel):
+    """/login 对齐：返回字段名为 token（非 access_token）"""
+    user: UserOut
+    token: str
+    token_type: str = "bearer"
+
+
 class RefreshResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"

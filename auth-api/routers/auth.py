@@ -1,4 +1,4 @@
-"""POST /auth/register, /auth/login, /auth/refresh, /auth/trial/start"""
+"""POST /register, /login（无 /auth 前缀）；/refresh, /status, /trial/*"""
 import hashlib
 import re
 import time
@@ -28,6 +28,7 @@ from schemas import (
     AuthResponse,
     ErrorDetail,
     LoginBody,
+    LoginResponse,
     RefreshBody,
     RefreshResponse,
     RegisterBody,
@@ -40,7 +41,7 @@ from schemas import (
     err_token_invalid,
 )
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter(prefix="", tags=["auth"])
 
 
 def is_email(s: str) -> bool:
@@ -185,7 +186,7 @@ def register(body: RegisterBody, db: Session = Depends(get_db)):
     )
 
 
-@router.post("/login", response_model=AuthResponse)
+@router.post("/login", response_model=LoginResponse)
 def login(body: LoginBody, db: Session = Depends(get_db)):
     identifier = (body.username or "").strip()
     if not identifier:
@@ -218,7 +219,7 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    access_token = create_access_token(user.id)
+    token = create_access_token(user.id)
     refresh_raw = create_refresh_token(user.id)
     refresh_hashed = token_hash(refresh_raw)
     expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
@@ -231,7 +232,7 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
     db.add(rt)
     db.commit()
 
-    return AuthResponse(
+    return LoginResponse(
         user=UserOut(
             id=user.id,
             email=user.email,
@@ -240,8 +241,7 @@ def login(body: LoginBody, db: Session = Depends(get_db)):
             last_login_at=user.last_login_at,
             status=user.status,
         ),
-        access_token=access_token,
-        refresh_token=refresh_raw,
+        token=token,
     )
 
 

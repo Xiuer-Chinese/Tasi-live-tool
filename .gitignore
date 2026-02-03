@@ -56,3 +56,8 @@ experiments/
 tmp/
 temp/
 Thumbs.db
+
+# Python / auth-api local
+__pycache__/
+*.pyc
+*.db

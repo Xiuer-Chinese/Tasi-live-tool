@@ -44,7 +44,7 @@ def _ensure_trials_table():
 
 
 def _ensure_user_status_columns():
-    """SQLite：为 users 表补列 plan（如不存在）；对已有用户补 created_at。不引入迁移系统。"""
+    """SQLite：为 users 表补列 plan/status/created_at/trial_*（如不存在）；对已有用户补默认值。不引入迁移系统。"""
     if not _url.startswith("sqlite"):
         return
     with engine.begin() as conn:
@@ -56,12 +56,19 @@ def _ensure_user_status_columns():
         result = conn.execute(text("PRAGMA table_info(users)"))
         rows = result.fetchall()
         columns = [row[1] for row in rows] if rows else []
+        if "created_at" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN created_at TEXT"))
+            conn.execute(text("UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL OR created_at = ''"))
+        if "status" not in columns:
+            conn.execute(text("ALTER TABLE users ADD COLUMN status TEXT DEFAULT 'active'"))
+            conn.execute(text("UPDATE users SET status = 'active' WHERE status IS NULL OR status = ''"))
         if "plan" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'"))
         if "trial_start_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_start_at TEXT"))
         if "trial_end_at" not in columns:
             conn.execute(text("ALTER TABLE users ADD COLUMN trial_end_at TEXT"))
+        # 老数据补 created_at
         conn.execute(
             text(
                 "UPDATE users SET created_at = datetime('now') WHERE created_at IS NULL OR created_at = ''"

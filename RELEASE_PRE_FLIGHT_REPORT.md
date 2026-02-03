@@ -2,7 +2,7 @@
 
 **生成时间**：发行前检查  
 **当前分支**：`dev-after-electron-fix`  
-**最新已提交**：`e0117a2 baseline: Phase 3 auth refresh stable (login/register/me/refresh)`
+**最新已提交**：`5f013d7 feat: auth and trial API integration, GET /auth/status with trial from DB, frontend trial flow, archive doc`
 
 ---
 
@@ -12,19 +12,33 @@
 
 | 类型 | 文件 |
 |------|------|
-| 已修改 | `electron/main/platforms/dev/dev.html` |
-| 已修改 | `src/components/auth/AuthProvider.tsx` |
-| 已修改 | `src/pages/AutoMessage/index.tsx` |
-| 已修改 | `src/pages/AutoPopUp/components/GoodsListCard.tsx` |
-| 已修改 | `src/pages/AutoPopUp/index.tsx` |
-| 已修改 | `src/pages/LiveControl/components/PlatformSelect.tsx` |
-| 已修改 | `src/pages/LiveControl/components/StatusCard.tsx` |
-| 已修改 | `src/utils/mockGoodsData.ts` |
-| 新增 | `src/components/auth/SubscribeDialog.tsx` |
-| 新增 | `src/stores/gateStore.ts` |
-| 新增 | `src/stores/trialStore.ts` |
+| 已修改 | `auth-api/config.py` |
+| 已修改 | `auth-api/database.py` |
+| 已修改 | `auth-api/deps.py` |
+| 已修改 | `auth-api/main.py` |
+| 已修改 | `auth-api/routers/auth.py` |
+| 已修改 | `auth-api/routers/me.py` |
+| 已修改 | `auth-api/schemas.py` |
+| 已修改 | `src/components/auth/LoginPage.tsx` |
+| 已修改 | `src/components/auth/SubscribeDialog.tsx` |
+| 已修改 | `src/config/authApiBase.ts` |
+| 已修改 | `src/stores/authStore.ts` |
+| 已修改 | `src/stores/trialStore.ts` |
+| 新增 | `auth-api/docs/ADMIN_API_DELIVERY.md` |
+| 新增 | `auth-api/docs/SUBSCRIPTION_STATUS_CURL.md` |
+| 新增 | `auth-api/docs/SUBSCRIPTION_STATUS_DEPLOY.md` |
+| 新增 | `auth-api/docs/TASK1_AUTH_FINDINGS.md` |
+| 新增 | `auth-api/export_openapi.py` |
+| 新增 | `auth-api/openapi.json` |
+| 新增 | `auth-api/routers/admin.py` |
+| 新增 | `auth-api/routers/subscription.py` |
+| 新增 | `auth-api/schemas_admin.py` |
+| 新增 | `auth-api/scripts/` |
+| 新增 | `deploy/appsmith/` |
+| 新增 | `deploy/datasette/` |
 
-**说明**：上述变更包含「测试平台在正式版可见」「首次登录默认测试平台并提示试用」「Mock 商品在测试平台可用」「移除 [测试] 注入商品按钮」「测试平台商品不可见修复」等，发行前需**全部提交**后再打 tag / 构建。
+**说明**：上述变更包含「auth-api 无 /auth 前缀、/login 返回 .token、GET /subscription/status、管理员 /admin/* 接口」「前端鉴权基准与订阅状态」「Appsmith/Datasette 部署脚本」等，发行前需**全部提交**后再打 tag / 构建。  
+**注意**：`auth-api/__pycache__/`、`auth-api/routers/__pycache__/`、`auth-api/test_align.db`、`auth-api/test_sub.db` 为忽略或临时文件，勿提交。
 
 ---
 
@@ -45,18 +59,18 @@
 
 ### 3.1 鉴权 API（正式版必看）
 
-- **文件**：`src/config/authApi.ts`
-- **逻辑**：`MODE === 'production'` 时使用 `VITE_AUTH_API_BASE_URL ?? 'https://your-auth-api.example.com'`
-- **建议**：正式版若使用云鉴权，请在**构建时**设置环境变量 `VITE_AUTH_API_BASE_URL` 为真实鉴权服务地址；否则打包后默认指向占位域名，需在文档中说明或后续通过配置覆盖。
+- **文件**：`src/config/authApiBase.ts`、`src/config/auth.ts`
+- **逻辑**：默认基准地址 `http://121.41.179.197:8000`；构建时可通过 `VITE_AUTH_API_BASE_URL` 覆盖；主进程用 `AUTH_API_BASE_URL` / `VITE_AUTH_API_BASE_URL` / `AUTH_API_BASE`。
+- **建议**：正式版若使用其他鉴权域名，请在构建时设置 `VITE_AUTH_API_BASE_URL` 或在文档中说明。
 
 ### 3.2 Electron 主进程鉴权
 
-- **文件**：`electron/main/ipc/auth.ts`
-- **逻辑**：`USE_MOCK_AUTH` 仅在 `NODE_ENV === 'development'` 且未设 `USE_REAL_AUTH` 时为 true；打包后通常 `NODE_ENV=production`，故**正式包会走云鉴权**（若已配置 `AUTH_API_BASE_URL` / `VITE_AUTH_API_BASE_URL`）。
+- **文件**：`electron/main/ipc/auth.ts`、`electron/main/services/cloudAuthClient.ts`
+- **逻辑**：打包后走云鉴权；基准 URL 来自环境变量或 `authApiBase.ts` 默认值。
 
 ### 3.3 敏感信息
 
-- `.gitignore` 已包含 `.env`、`.env.*`，未发现硬编码密钥；构建/运行若需密钥，请通过环境变量或构建时注入，勿提交进仓库。
+- `.gitignore` 已包含 `.env`、`.env.*`；未发现硬编码密钥；构建/运行若需密钥，请通过环境变量或构建时注入，勿提交进仓库。
 
 ---
 
@@ -65,39 +79,31 @@
 ### 4.1 console 使用情况
 
 - **src 下**：约 150+ 处 `console.log` / `console.warn` / `console.error`，多为状态机、任务、门控等调试/排错输出。
-- **建议**：发行不强制删除；若希望正式包控制台更干净，可后续用 Vite/Rollup 的 drop_console 或按 `import.meta.env.PROD` 条件化部分 log（**本次可不做**）。
+- **建议**：发行不强制删除；若希望正式包控制台更干净，可后续用 Vite 的 drop_console 或按 `import.meta.env.PROD` 条件化（**本次可不做**）。
 
 ### 4.2 TODO / FIXME
 
-- `src/tasks/gateCheck.ts`：TODO 前置条件3（登录状态检查）
-- `src/hooks/useLiveFeatureGate.ts`：TODO 前置条件3
-- `src/utils/taskGate.ts`：TODO 前置条件2/3（直播状态、登录状态）
-- `src/components/auth/UserCenter.tsx`：TODO 打开设置页面
-- `src/components/common/ValidateNumberInput.tsx`：TODO 友好提示
-
-**说明**：均为功能增强或边界条件，不阻塞当前正式版发行；可在发行后迭代处理。
+- 均为功能增强或边界条件，不阻塞当前正式版发行；可在发行后迭代处理。
 
 ### 4.3 Lint / 构建
 
-- 建议发行前执行：`pnpm run build`（或 `npm run build`），确保无 TypeScript / Vite 报错；如有 lint 脚本也可跑一遍。
+- 建议发行前执行：`npm run build`（或 `pnpm run build`），确保无 TypeScript / Vite 报错；可执行 `scripts/pre-release-check.ps1` 做只读检查。
 
 ---
 
 ## 五、发行前准备步骤（建议顺序）
 
-以下为**建议执行顺序**，您确认后再执行。
-
 1. **提交当前所有变更**
-   - 将上述「未提交变更」全部 add 并 commit，建议 message 示例：  
-     `release: v1.0 正式版 - 测试平台入包、首次登录默认测试平台与试用提示`
+   - 将「一、当前仓库状态」中未提交变更全部 add 并 commit（排除 __pycache__、*.db），建议 message 示例：  
+     `release: v1.0.0 - 云鉴权、订阅状态、管理员后台、无 /auth 前缀与 .token 对齐`
 
 2. **（可选）版本与 CHANGELOG**
    - 若沿用 `1.0.0`：无需改版本。
-   - 若使用 `npm run release`：该脚本会 `git add CHANGELOG.md package.json` 并 commit、打 tag、push；需保证**已有 CHANGELOG.md**，或先执行 `npm run bump` 生成再 release。  
-   - **若仅打 tag 并推送代码**：可跳过 `npm run release`，改为手动打 tag 和 push（见下）。
+   - 若使用 `npm run release`：需保证已有 `CHANGELOG.md`，或先执行 `npm run bump` 生成再 release。
+   - **若仅打 tag 并推送代码**：可跳过 `npm run release`，改为手动打 tag 和 push。
 
 3. **打 Tag**
-   - 建议 tag：`v1.0.0` 或 `v1.0`（与现有 RELEASE_V1.0_CHECKLIST 一致）
+   - 建议 tag：`v1.0.0` 或 `v1.0`（与 RELEASE_V1.0_CHECKLIST 一致）
    - 命令示例：`git tag -a v1.0.0 -m "Release v1.0.0"`
 
 4. **本地构建验证**
@@ -116,12 +122,21 @@
 
 ---
 
-## 六、执行清单（您确认后执行的内容）
+## 六、执行清单（可打印/勾选）
 
-- [ ] 将当前所有未提交变更 **add + commit**（含上述 11 个文件）
-- [ ] 打 tag：`v1.0.0`（或 `v1.0`）
-- [ ] 本地执行 `npm run build` 与 `npm run dist` 做一次构建验证
-- [ ] 推送分支与 tag 到远程（`git push` + `git push origin <tag>`）
+| 序号 | 项 | 说明 |
+|------|----|------|
+| 1 | 未提交变更已全部提交 | git status 干净或仅允许忽略项 |
+| 2 | package.json version 正确 | 如 1.0.0 |
+| 3 | electron-builder 产物名符合预期 | 如 V1.0_win-x64 |
+| 4 | npm run build 通过 | 无 TS/Vite 报错 |
+| 5 | npm run dist 通过 | release/ 下生成 exe + zip |
+| 6 | 鉴权基准 URL 确认 | 默认或 VITE_AUTH_API_BASE_URL 与生产一致 |
+| 7 | auth-api 已部署且接口对齐 | /register、/login(.token)、/subscription/status |
+| 8 | 无敏感信息提交 | .env 未提交、无硬编码密钥 |
+| 9 | RELEASE_NOTES 已更新 | 关键变更、已知限制、下载说明 |
+| 10 | Tag 已打并推送 | 如 v1.0.0 |
+| 11 | GitHub/Gitee Release 已创建 | 附件含 exe、zip，说明已粘贴 |
 
 **不包含**（需您自行决定或本地执行）：
 
@@ -137,11 +152,9 @@
 |--------|------|
 | 版本号 1.0.0 | 已就绪 |
 | 构建配置与产物名 | 已就绪 |
-| 鉴权 API 配置 | 需在正式环境设置 VITE_AUTH_API_BASE_URL 或文档说明 |
-| 未提交变更 | 需在发行前提交 |
+| 鉴权 API 配置 | 默认 121.41.179.197:8000，可构建时覆盖 |
+| 未提交变更 | 需在发行前提交（见第一节） |
 | 阻塞性 TODO/console | 无，可发行 |
 | 敏感信息 | 未发现泄露 |
 
-**结论**：完成「提交变更 → 打 tag → 构建验证 → 推送」后，即可进行正式版发行；云鉴权正式地址需在构建或运行环境中单独配置。  
-
-**您确认后，我将按上述清单执行：提交、打 tag、构建验证、推送（具体命令会按您仓库的远程与分支再定）。**
+**结论**：完成「提交变更 → 打 tag → 构建验证 → 推送」后，即可进行正式版发行。auth-api 部署与接口对齐见 `auth-api/docs/ADMIN_API_DELIVERY.md`、`auth-api/docs/SUBSCRIPTION_STATUS_DEPLOY.md`。
