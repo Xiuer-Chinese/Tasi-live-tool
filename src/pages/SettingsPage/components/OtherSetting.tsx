@@ -1,4 +1,4 @@
-import { ExternalLinkIcon, FileTextIcon } from 'lucide-react'
+import { ExternalLinkIcon, FileTextIcon, LogOutIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { Button } from '@/components/ui/button'
@@ -6,11 +6,20 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import {
+  AUTH_LAST_IDENTIFIER_KEY,
+  AUTH_REMEMBER_ME_KEY,
+  AUTH_ZUSTAND_PERSIST_KEY,
+} from '@/constants/authStorageKeys'
 import { useTheme } from '@/hooks/useTheme'
+import { useToast } from '@/hooks/useToast'
+import { useAuthStore } from '@/stores/authStore'
 
 export function OtherSetting() {
   const [theme, setTheme] = useTheme()
   const [hideToTrayTipEnabled, setHideToTrayTipEnabled] = useState(true)
+  const { toast } = useToast()
+  const clearTokensAndUnauth = useAuthStore(s => s.clearTokensAndUnauth)
 
   // 加载设置
   useEffect(() => {
@@ -50,6 +59,22 @@ export function OtherSetting() {
     )
   }
 
+  const handleClearLocalLoginData = async () => {
+    try {
+      if (window.ipcRenderer) {
+        await window.ipcRenderer.invoke(IPC_CHANNELS.app.clearLocalLoginData)
+      }
+      localStorage.removeItem(AUTH_REMEMBER_ME_KEY)
+      localStorage.removeItem(AUTH_LAST_IDENTIFIER_KEY)
+      localStorage.removeItem(AUTH_ZUSTAND_PERSIST_KEY)
+      clearTokensAndUnauth()
+      toast.success('已清除本地登录数据，下次打开登录框将为空')
+    } catch (e) {
+      console.error('Clear local login data failed:', e)
+      toast.error('清除失败，请重试')
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -79,6 +104,26 @@ export function OtherSetting() {
               </p>
             </div>
             <Switch checked={hideToTrayTipEnabled} onCheckedChange={handleToggleHideToTrayTip} />
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium leading-none">清除本地登录数据</h4>
+              <p className="text-sm text-muted-foreground">
+                清除 token、记住登录状态与上次账号，不影响其他业务数据；下次启动登录框将为空
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={handleClearLocalLoginData}
+            >
+              <LogOutIcon className="h-4 w-4" />
+              清除本地登录数据
+            </Button>
           </div>
 
           <Separator />

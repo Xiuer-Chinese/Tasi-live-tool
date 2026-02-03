@@ -5,6 +5,7 @@ import AutoPopUp from '@/pages/AutoPopUp'
 import AutoReply from '@/pages/AutoReply'
 import AutoReplySettings from '@/pages/AutoReply/AutoReplySettings'
 import ForgotPassword from '@/pages/ForgotPassword'
+import HelpSupport from '@/pages/HelpSupport'
 import LiveControl from '@/pages/LiveControl'
 import Settings from '@/pages/SettingsPage'
 import App from '../App'
@@ -29,6 +30,10 @@ export const router = createHashRouter([
       {
         path: '/settings',
         element: <Settings />,
+      },
+      {
+        path: '/help-support',
+        element: <HelpSupport />,
       },
       {
         path: '/ai-chat',

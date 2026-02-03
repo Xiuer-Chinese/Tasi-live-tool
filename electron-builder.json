@@ -19,7 +19,13 @@
     "dist-electron/**/*",
     "dist-electron/main/runtime/**",
     "electron/platformConfig.js",
-    "package.json"
+    "package.json",
+    "!**/*.map",
+    "!**/test/**",
+    "!**/tests/**",
+    "!**/docs/**",
+    "!**/.cache/**",
+    "!**/playwright/.cache/**"
   ],
   "afterPack": "scripts/electron-after-pack.js",
 

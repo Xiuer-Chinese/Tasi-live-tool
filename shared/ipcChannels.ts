@@ -73,5 +73,6 @@ export const IPC_CHANNELS = {
     hideToTrayTip: 'app:hideToTrayTip',
     setHideToTrayTipDismissed: 'app:setHideToTrayTipDismissed',
     getHideToTrayTipDismissed: 'app:getHideToTrayTipDismissed',
+    clearLocalLoginData: 'app:clearLocalLoginData',
   },
 } as const

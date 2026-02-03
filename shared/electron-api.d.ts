@@ -132,6 +132,7 @@ export interface IpcChannels {
   [IPC_CHANNELS.app.hideToTrayTip]: (arg: Record<string, never>) => void
   [IPC_CHANNELS.app.setHideToTrayTipDismissed]: (dismissed: boolean) => Promise<void>
   [IPC_CHANNELS.app.getHideToTrayTipDismissed]: () => Promise<boolean>
+  [IPC_CHANNELS.app.clearLocalLoginData]: () => Promise<void>
 
   [IPC_CHANNELS.account.switch]: (params: { account: Account }) => void
 

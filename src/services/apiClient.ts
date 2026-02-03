@@ -73,7 +73,7 @@ async function request<T>(
   }
 }
 
-/** POST /auth/refresh 响应：仅返回 access_token */
+/** POST /refresh 响应：仅返回 access_token（与 auth-api 无 /auth 前缀一致） */
 interface RefreshResponse {
   access_token: string
   token_type?: string
@@ -81,11 +81,11 @@ interface RefreshResponse {
 
 let refreshLock: Promise<string | null> | null = null
 
-/** 调用 POST /auth/refresh，成功返回新 access_token 并写入 store，失败清空 token 并返回 null */
+/** 调用 POST /refresh，成功返回新 access_token 并写入 store，失败清空 token 并返回 null */
 async function doRefresh(): Promise<string | null> {
   const { refreshToken, setToken, clearTokensAndUnauth } = useAuthStore.getState()
   if (!refreshToken) return null
-  const result = await request<RefreshResponse>('POST', '/auth/refresh', null, {
+  const result = await request<RefreshResponse>('POST', '/refresh', null, {
     refresh_token: refreshToken,
   })
   if (result.ok && result.data?.access_token) {

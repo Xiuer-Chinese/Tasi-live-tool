@@ -1,3 +1,4 @@
+import { HelpCircle } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { autoReplyPlatforms } from '@/abilities'
 import { useCurrentAutoMessage } from '@/hooks/useAutoMessage'
@@ -64,6 +65,11 @@ export default function Sidebar() {
       id: '/settings',
       name: '应用设置',
       icon: <CarbonSettings className="w-5 h-5" />,
+    },
+    {
+      id: '/help-support',
+      name: '帮助与支持',
+      icon: <HelpCircle className="w-5 h-5" />,
     },
   ]
 

@@ -38,7 +38,10 @@ export default defineConfig(({ command }) => {
   return {
     base: isBuild ? './' : '/',
     build: {
-      sourcemap,
+      // 生产构建不打 sourcemap，减小发行包体积
+      sourcemap: isBuild ? false : sourcemap,
+      // 生产构建去掉 console/debugger，减少控制台泄露与噪音
+      ...(isBuild && { esbuild: { drop: ['console', 'debugger'] } }),
     },
     resolve: {
       alias: {
@@ -65,9 +68,10 @@ export default defineConfig(({ command }) => {
           },
           vite: {
             build: {
-              sourcemap: true,
+              sourcemap: !isBuild,
               minify: false,
               outDir: 'dist-electron/main',
+              ...(isBuild && { esbuild: { drop: ['console', 'debugger'] } }),
               rollupOptions: {
                 external: [
                   'electron',
@@ -95,9 +99,10 @@ export default defineConfig(({ command }) => {
           input: 'electron/preload/index.ts',
           vite: {
             build: {
-              sourcemap: sourcemap ? 'inline' : undefined,
+              sourcemap: isBuild ? false : sourcemap ? 'inline' : undefined,
               minify: isBuild,
               outDir: 'dist-electron/preload',
+              ...(isBuild && { esbuild: { drop: ['console', 'debugger'] } }),
               rollupOptions: {
                 external: [
                   'playwright',

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { accountManager } from '#/managers/AccountManager'
+import { clearStoredTokens } from '#/services/CloudAuthStorage'
 import { typedIpcMainHandle } from '#/utils'
 
 function setupIpcHandlers() {
@@ -25,6 +26,11 @@ function setupIpcHandlers() {
 
   typedIpcMainHandle(IPC_CHANNELS.account.switch, (_, { account }) => {
     accountManager.setAccountName(account.id, account.name)
+  })
+
+  /** 清除本地登录数据：主进程 token 存储（userData/auth/tokens.enc），渲染进程需自行清除 localStorage 与 store */
+  typedIpcMainHandle(IPC_CHANNELS.app.clearLocalLoginData, async () => {
+    clearStoredTokens()
   })
 }
 

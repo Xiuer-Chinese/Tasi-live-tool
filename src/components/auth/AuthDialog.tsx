@@ -3,6 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  AUTH_LAST_IDENTIFIER_KEY,
+  AUTH_REMEMBER_ME_KEY,
+  BLOCKED_TEST_IDENTIFIERS,
+  getSanitizedLastIdentifier,
+} from '@/constants/authStorageKeys'
 import { useToast } from '@/hooks/useToast'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -30,6 +36,9 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  /** 登录失败时原始错误，仅开发环境折叠展示 */
+  const [lastLoginRawError, setLastLoginRawError] = useState<string | null>(null)
+  const [devDetailsOpen, setDevDetailsOpen] = useState(false)
 
   const { login, register, isLoading, error, clearError } = useAuthStore()
   const { toast } = useToast()
@@ -42,13 +51,15 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
     if (isOpen) {
       clearError()
       setValidationError(null)
+      setLastLoginRawError(null)
+      setDevDetailsOpen(false)
       setMode('login') // 默认显示登录
       // 重置回填标记，允许下次打开时重新回填
       hasAutoFilledRef.current = false
     } else {
       // 关闭弹窗时清空表单（密码始终清空，账号根据 rememberMe 决定）
-      const rememberMe = localStorage.getItem('auth.rememberMe') === 'true'
-      const lastIdentifier = localStorage.getItem('auth.lastIdentifier') || ''
+      const rememberMe = localStorage.getItem(AUTH_REMEMBER_ME_KEY) === 'true'
+      const lastIdentifier = getSanitizedLastIdentifier()
       if (rememberMe && lastIdentifier) {
         // 如果勾选了记住我，保留账号，只清空密码
         setLoginForm({ username: lastIdentifier, password: '', rememberMe: true })
@@ -62,8 +73,8 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
   // 切换到登录模式时，如果勾选了"记住我"，自动回填账号
   useEffect(() => {
     if (mode === 'login' && isOpen && !hasAutoFilledRef.current) {
-      const rememberMe = localStorage.getItem('auth.rememberMe') === 'true'
-      const lastIdentifier = localStorage.getItem('auth.lastIdentifier') || ''
+      const rememberMe = localStorage.getItem(AUTH_REMEMBER_ME_KEY) === 'true'
+      const lastIdentifier = getSanitizedLastIdentifier()
 
       // 只在当前表单为空时回填，避免覆盖用户手动输入
       if (rememberMe && lastIdentifier && !loginForm.username.trim()) {
@@ -141,11 +152,16 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
       // 登录成功后，保存"记住我"设置和账号
       const { rememberMe, username } = loginForm
       if (rememberMe) {
-        localStorage.setItem('auth.rememberMe', 'true')
-        localStorage.setItem('auth.lastIdentifier', username.trim())
+        localStorage.setItem(AUTH_REMEMBER_ME_KEY, 'true')
+        const trimmed = username.trim()
+        if (trimmed && !BLOCKED_TEST_IDENTIFIERS.has(trimmed)) {
+          localStorage.setItem(AUTH_LAST_IDENTIFIER_KEY, trimmed)
+        } else {
+          localStorage.removeItem(AUTH_LAST_IDENTIFIER_KEY)
+        }
       } else {
-        localStorage.setItem('auth.rememberMe', 'false')
-        localStorage.removeItem('auth.lastIdentifier')
+        localStorage.setItem(AUTH_REMEMBER_ME_KEY, 'false')
+        localStorage.removeItem(AUTH_LAST_IDENTIFIER_KEY)
       }
 
       // 登录成功后，触发成功事件（用于继续执行待执行的操作）
@@ -154,10 +170,17 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
       onClose()
       setLoginForm({ username: '', password: '', rememberMe: false })
     } else {
-      // 显示后端错误
-      const errorMessage = result.error || '登录失败，请检查网络或稍后重试'
-      setValidationError(errorMessage)
-      toast.error(errorMessage)
+      // 仅清空密码、保留账号；展示友好文案；开发环境可展开原始错误
+      const userMessage = result.error || '登录失败，请稍后重试'
+      setLoginForm(prev => ({ ...prev, password: '' }))
+      setValidationError(userMessage)
+      setLastLoginRawError(result.rawError ?? null)
+      setDevDetailsOpen(false)
+      toast.error(userMessage)
+      setTimeout(() => {
+        const passwordInput = document.getElementById('login-password') as HTMLInputElement | null
+        if (passwordInput) passwordInput.focus()
+      }, 100)
     }
   }
 
@@ -256,9 +279,9 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
 
         {/* Content */}
         <div>
-          {/* Error Message */}
+          {/* Error Message（仅展示友好文案，不展示状态码/URL/英文原文） */}
           {displayError && (
-            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg space-y-2">
               <p
                 className="text-[13px] text-destructive"
                 style={{
@@ -267,6 +290,22 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
               >
                 {displayError}
               </p>
+              {import.meta.env.DEV && lastLoginRawError && (
+                <div className="mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDevDetailsOpen(prev => !prev)}
+                    className="text-[12px] text-muted-foreground hover:text-foreground underline"
+                  >
+                    {devDetailsOpen ? '收起' : '更多信息'}
+                  </button>
+                  {devDetailsOpen && (
+                    <pre className="mt-1 p-2 bg-muted/50 rounded text-[11px] overflow-auto max-h-24 break-all whitespace-pre-wrap">
+                      {lastLoginRawError}
+                    </pre>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

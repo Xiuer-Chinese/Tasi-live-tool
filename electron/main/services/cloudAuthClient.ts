@@ -32,7 +32,31 @@ function getAuthPathPrefix(): string {
   return base.endsWith('/auth') ? '' : '/auth'
 }
 
-/** 统一鉴权请求日志：requestId、URL、method、脱敏 body、status、response.data（证据链） */
+/** 对 responseData 脱敏：含 password/token/secret 的键替换为 *** */
+function maskResponseData(data: unknown): unknown {
+  if (data === null || data === undefined) return data
+  if (typeof data === 'object' && !Array.isArray(data)) {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(data)) {
+      const keyLower = k.toLowerCase()
+      if (
+        keyLower.includes('password') ||
+        keyLower.includes('token') ||
+        keyLower.includes('secret') ||
+        keyLower.includes('refresh')
+      ) {
+        out[k] = '***'
+      } else {
+        out[k] = maskResponseData(v)
+      }
+    }
+    return out
+  }
+  if (Array.isArray(data)) return data.map(maskResponseData)
+  return data
+}
+
+/** 统一鉴权请求日志：requestId、URL、method、脱敏 body、status、responseData（脱敏） */
 function logAuthCall(
   requestId: string,
   method: string,
@@ -47,7 +71,7 @@ function logAuthCall(
     url,
     body: bodySanitized ?? '(no body)',
     status,
-    responseData,
+    responseData: maskResponseData(responseData),
     timestamp: new Date().toISOString(),
   })
 }

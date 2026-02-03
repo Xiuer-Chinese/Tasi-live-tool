@@ -1,5 +1,10 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import {
+  AUTH_LAST_IDENTIFIER_KEY,
+  AUTH_REMEMBER_ME_KEY,
+  AUTH_ZUSTAND_PERSIST_KEY,
+} from '@/constants/authStorageKeys'
 import { getMe, getTrialStatus, getUserStatus, startTrial } from '../services/apiClient'
 import { MockAuthService } from '../services/MockAuthService'
 import type {
@@ -10,6 +15,7 @@ import type {
   SafeUser,
   UserStatus,
 } from '../types/auth'
+import { mapAuthError } from '../utils/mapAuthError'
 
 /** authAPI 可能返回的 Mock 标记（用于降级到 MockAuthService） */
 type LoginResponseWithMock = AuthResponse & { __useMock?: boolean; data?: LoginCredentials }
@@ -41,7 +47,9 @@ interface AuthStore extends AuthState {
   /** GET /auth/status 返回的用户状态（只读感知，不做限制） */
   userStatus: UserStatus | null
   // Actions
-  login: (credentials: LoginCredentials) => Promise<{ success: boolean; error?: string }>
+  login: (
+    credentials: LoginCredentials,
+  ) => Promise<{ success: boolean; error?: string; rawError?: string }>
   register: (data: RegisterData) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   /** 启动时调用：无 token→未登录；有 token→GET /me，200→已登录，401→尝试 refresh 后恢复或回登录页，其他→已登录但离线 */
@@ -133,31 +141,35 @@ export const useAuthStore = create<AuthStore>()(
           const status = (response as { status?: number }).status
           const detail = (response as { detail?: string }).detail ?? response.error ?? ''
           const requestUrl = (response as { requestUrl?: string }).requestUrl
-          const errWithObservability =
-            typeof status === 'number'
-              ? `登录失败（${status}）：${detail || '(无详情)'}${typeof requestUrl === 'string' ? `（请求地址：${requestUrl}）` : ''}`
-              : (detail || '登录失败') +
-                (typeof requestUrl === 'string' ? ` (请求地址: ${requestUrl})` : '')
+          const raw = { status, detail, requestUrl }
+          const { userMessage, rawForDev } = mapAuthError(raw)
+          console.log(`[AuthStore] Login failed [${requestId}]:`, {
+            status,
+            detail: detail || '(none)',
+          })
           set({
             isAuthenticated: false,
             user: null,
             token: null,
             refreshToken: null,
             isLoading: false,
-            error: errWithObservability,
+            error: userMessage,
           })
-          return { success: false, error: errWithObservability }
+          return { success: false, error: userMessage, rawError: rawForDev }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : '登录失败'
+          const { userMessage, rawForDev } = mapAuthError(
+            error instanceof Error ? error : { error: String(error) },
+          )
+          console.log(`[AuthStore] Login failed [${requestId}] (throw):`, rawForDev)
           set({
             isAuthenticated: false,
             user: null,
             token: null,
             refreshToken: null,
             isLoading: false,
-            error: errorMessage,
+            error: userMessage,
           })
-          return { success: false, error: errorMessage }
+          return { success: false, error: userMessage, rawError: rawForDev }
         }
       },
 
@@ -325,6 +337,14 @@ export const useAuthStore = create<AuthStore>()(
             error: null,
             isOffline: false,
           })
+          // 退出登录后：若未勾选「记住账号」，清空本地保存的账号与记住状态
+          if (
+            typeof localStorage !== 'undefined' &&
+            localStorage.getItem(AUTH_REMEMBER_ME_KEY) !== 'true'
+          ) {
+            localStorage.removeItem(AUTH_LAST_IDENTIFIER_KEY)
+            localStorage.setItem(AUTH_REMEMBER_ME_KEY, 'false')
+          }
         }
       },
 
@@ -465,7 +485,7 @@ export const useAuthStore = create<AuthStore>()(
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'auth-storage',
+      name: AUTH_ZUSTAND_PERSIST_KEY,
       storage: createJSONStorage(() => localStorage),
       partialize: state => ({
         token: state.token,
