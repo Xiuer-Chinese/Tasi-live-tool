@@ -40,7 +40,8 @@
     "playwright-extra": "^4.3.6",
     "playwright-extra-plugin-stealth": "^0.0.1",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.10",
@@ -84,8 +85,8 @@
     "bumpp": "^10.0.1",
     "changelogen": "^0.6.1",
     "class-variance-authority": "^0.7.1",
-    "cross-env": "^7.0.3",
     "clsx": "^2.1.1",
+    "cross-env": "^7.0.3",
     "dompurify": "^3.2.6",
     "dotenv": "17.2.3",
     "electron": "^36.3.2",

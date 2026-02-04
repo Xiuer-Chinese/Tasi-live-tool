@@ -7,6 +7,7 @@ import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { useAutoMessageStore } from '@/hooks/useAutoMessage'
 import { useAutoPopUpStore } from '@/hooks/useAutoPopUp'
 import { useAutoReplyStore } from '@/hooks/useAutoReply'
+import { useLiveStatsStore } from '@/hooks/useLiveStats'
 import type { TaskStopReason } from './taskGate'
 import { getStopReasonText } from './taskGate'
 
@@ -29,32 +30,45 @@ export async function stopAllLiveTasks(
   const stoppedTasks: string[] = []
 
   try {
-    // 1. 停止自动回复任务（评论监听）
+    // 1. 检查评论监听状态（自动回复和数据监控共享同一个监听器）
     const autoReplyStore = useAutoReplyStore.getState()
     const autoReplyContext = autoReplyStore.contexts[accountId]
-    if (
-      autoReplyContext?.isListening === 'listening' ||
-      autoReplyContext?.isListening === 'waiting'
-    ) {
+    const liveStatsStore = useLiveStatsStore.getState()
+    const liveStatsContext = liveStatsStore.contexts[accountId]
+
+    const autoReplyListening =
+      autoReplyContext?.isListening === 'listening' || autoReplyContext?.isListening === 'waiting'
+    const liveStatsListening = liveStatsContext?.isListening === true
+
+    // 只要任一方在监听，就需要停止 IPC 监听器
+    if (autoReplyListening || liveStatsListening) {
       console.log(
-        `[TaskGate] Stopping auto reply listener for account ${accountId}, reason: ${reason}`,
+        `[TaskGate] Stopping comment listener for account ${accountId}, reason: ${reason}`,
       )
       console.log(
-        `[task] Auto reply status before stop: isListening=${autoReplyContext.isListening}, isRunning=${autoReplyContext.isRunning}`,
+        `[task] Status before stop: autoReply.isListening=${autoReplyContext?.isListening}, liveStats.isListening=${liveStatsContext?.isListening}`,
       )
       try {
         await window.ipcRenderer.invoke(IPC_CHANNELS.tasks.autoReply.stopCommentListener, accountId)
-        console.log('[task] Auto reply IPC stop invoked successfully')
+        console.log('[task] Comment listener IPC stop invoked successfully')
       } catch (error) {
-        console.error('[TaskGate] Failed to stop auto reply listener:', error)
+        console.error('[TaskGate] Failed to stop comment listener:', error)
       }
-      autoReplyStore.setIsListening(accountId, 'stopped')
-      autoReplyStore.setIsRunning(accountId, false)
-      console.log('[task] Auto reply status after stop: isListening=stopped, isRunning=false')
-      stoppedTasks.push('auto-reply')
+
+      // 同步更新两边的状态
+      if (autoReplyListening) {
+        autoReplyStore.setIsListening(accountId, 'stopped')
+        autoReplyStore.setIsRunning(accountId, false)
+        stoppedTasks.push('auto-reply')
+      }
+      if (liveStatsListening) {
+        liveStatsStore.setListening(accountId, false)
+        stoppedTasks.push('live-stats')
+      }
+      console.log('[task] Status after stop: isListening=stopped')
     } else {
       console.log(
-        `[TaskGate] Auto reply not running (isListening=${autoReplyContext?.isListening}), skipping stop`,
+        `[TaskGate] Comment listener not running (autoReply=${autoReplyContext?.isListening}, liveStats=${liveStatsContext?.isListening}), skipping stop`,
       )
     }
 

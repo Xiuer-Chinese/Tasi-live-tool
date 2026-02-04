@@ -28,8 +28,6 @@ def create_tables():
     Base.metadata.create_all(bind=engine)
     _ensure_user_status_columns()
     _ensure_trials_table()
-
-
 def _ensure_trials_table():
     """SQLite：创建 trials 表（id, username UNIQUE, start_ts, end_ts），供 POST /auth/trial/start 使用。"""
     if not _url.startswith("sqlite"):
@@ -41,8 +39,6 @@ def _ensure_trials_table():
                 "id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, start_ts INTEGER, end_ts INTEGER)"
             )
         )
-
-
 def _ensure_user_status_columns():
     """SQLite：为 users 表补列 plan/status/created_at/trial_*（如不存在）；对已有用户补默认值。不引入迁移系统。"""
     if not _url.startswith("sqlite"):

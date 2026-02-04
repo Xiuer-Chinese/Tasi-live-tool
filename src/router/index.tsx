@@ -7,6 +7,7 @@ import AutoReplySettings from '@/pages/AutoReply/AutoReplySettings'
 import ForgotPassword from '@/pages/ForgotPassword'
 import HelpSupport from '@/pages/HelpSupport'
 import LiveControl from '@/pages/LiveControl'
+import LiveStats from '@/pages/LiveStats'
 import Settings from '@/pages/SettingsPage'
 import App from '../App'
 
@@ -26,6 +27,10 @@ export const router = createHashRouter([
       {
         path: '/auto-popup',
         element: <AutoPopUp />,
+      },
+      {
+        path: '/live-stats',
+        element: <LiveStats />,
       },
       {
         path: '/settings',

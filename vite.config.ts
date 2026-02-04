@@ -126,15 +126,12 @@ export default defineConfig(({ command }) => {
         renderer: {},
       }),
     ],
-    server:
-      process.env.VSCODE_DEBUG &&
-      (() => {
-        const url = new URL(pkg.debug.env.VITE_DEV_SERVER_URL)
-        return {
-          host: url.hostname,
-          port: +url.port,
-        }
-      })(),
+    server: {
+      // 强制使用 IPv4，避免 Electron 连接 IPv6 失败
+      host: '127.0.0.1',
+      port: 5173,
+      strictPort: true,
+    },
     clearScreen: false,
   }
 })

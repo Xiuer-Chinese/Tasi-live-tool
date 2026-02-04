@@ -1,10 +1,12 @@
-import { HelpCircle } from 'lucide-react'
+import { BarChart3, HelpCircle } from 'lucide-react'
 import { NavLink } from 'react-router'
 import { autoReplyPlatforms } from '@/abilities'
+import { useAccounts } from '@/hooks/useAccounts'
 import { useCurrentAutoMessage } from '@/hooks/useAutoMessage'
 import { useCurrentAutoPopUp } from '@/hooks/useAutoPopUp'
 import { useAutoReply } from '@/hooks/useAutoReply'
 import { useCurrentLiveControl } from '@/hooks/useLiveControl'
+import { useLiveStatsStore } from '@/hooks/useLiveStats'
 import { cn } from '@/lib/utils'
 import {
   CarbonBlockStorage,
@@ -27,6 +29,9 @@ export default function Sidebar() {
   const isAutoMessageRunning = useCurrentAutoMessage(context => context.isRunning)
   const isAutoPopupRunning = useCurrentAutoPopUp(context => context.isRunning)
   const { isRunning: isAutoReplyRunning } = useAutoReply()
+  const { currentAccountId } = useAccounts()
+  const liveStatsContexts = useLiveStatsStore(state => state.contexts)
+  const isLiveStatsListening = liveStatsContexts[currentAccountId]?.isListening ?? false
   const platform = useCurrentLiveControl(context => context.connectState.platform) as
     | LiveControlPlatform
     | undefined
@@ -54,6 +59,13 @@ export default function Sidebar() {
       name: '自动回复',
       isRunning: isAutoReplyRunning,
       icon: <CarbonIbmEventAutomation className="w-5 h-5" />,
+      platform: autoReplyPlatforms,
+    },
+    {
+      id: '/live-stats',
+      name: '数据监控',
+      isRunning: isLiveStatsListening,
+      icon: <BarChart3 className="w-5 h-5" />,
       platform: autoReplyPlatforms,
     },
     {

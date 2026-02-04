@@ -6,6 +6,7 @@ import { setupAutoPopUpIpcHandlers } from './autoPopUp'
 import { setupBrowserIpcHandlers } from './browser'
 import { setupAutoReplyIpcHandlers } from './commentListener'
 import { setupLiveControlIpcHandlers } from './connection'
+import { setupLiveStatsIpcHandlers } from './liveStats'
 import { setupPinCommentIpcHandler } from './pinComment'
 import { setupUpdateIpcHandlers } from './update'
 
@@ -19,3 +20,4 @@ setupAppIpcHandlers()
 setupUpdateIpcHandlers()
 setupPinCommentIpcHandler()
 setupAuthHandlers()
+setupLiveStatsIpcHandlers()

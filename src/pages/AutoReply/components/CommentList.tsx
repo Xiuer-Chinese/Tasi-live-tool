@@ -1,21 +1,13 @@
 import { motion } from 'framer-motion'
-import { Loader2, Pause, Play, RefreshCcw } from 'lucide-react'
 import { memo, useId, useMemo, useState } from 'react'
-import { IPC_CHANNELS } from 'shared/ipcChannels'
-import { GateButton } from '@/components/GateButton'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
-import { useAccounts } from '@/hooks/useAccounts'
 import { type Message, useAutoReply } from '@/hooks/useAutoReply'
-import { useAutoReplyConfig } from '@/hooks/useAutoReplyConfig'
 import { useCurrentLiveControl } from '@/hooks/useLiveControl'
-import { useLiveFeatureGate } from '@/hooks/useLiveFeatureGate'
-import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 
 const getMessageColor = (type: Message['msg_type']) => {
@@ -137,62 +129,27 @@ export default function CommentList({
 }: {
   highlight: string | null
 }) {
-  const { comments, isListening, setIsListening } = useAutoReply()
-  const { config } = useAutoReplyConfig()
-  const gate = useLiveFeatureGate()
-  const { toast } = useToast()
+  const { comments, isListening } = useAutoReply()
   const [hideHost, setHideHost] = useState(false)
-  const { currentAccountId } = useAccounts()
-
-  // 手动启动监听评论（回退到旧逻辑，不使用 TaskManager）
-  const startListening = async () => {
-    // 前置条件校验：使用 Gate 机制
-    // 注意：Gate 校验在页面级别已经处理，这里只做 IPC 调用
-    // 如果 Gate 不满足，按钮会被禁用，不会调用到这里
-    try {
-      setIsListening('waiting')
-      console.log(`[Gate] Starting comment listener for account ${currentAccountId}`)
-      const result = await window.ipcRenderer.invoke(
-        IPC_CHANNELS.tasks.autoReply.startCommentListener,
-        currentAccountId,
-        {
-          source: config.entry,
-          ws: config.ws?.enable ? { port: config.ws.port } : undefined,
-        },
-      )
-      if (!result) throw new Error('监听评论失败')
-      toast.success('监听评论成功')
-      setIsListening('listening')
-      console.log(`[Gate] Comment listener started successfully for account ${currentAccountId}`)
-    } catch (_error) {
-      setIsListening('error')
-      toast.error('监听评论失败')
-      console.error('[Gate] Failed to start comment listener:', _error)
-    }
-  }
-
-  // 手动停止监听评论（回退到旧逻辑）
-  const stopListening = async () => {
-    try {
-      await window.ipcRenderer.invoke(
-        IPC_CHANNELS.tasks.autoReply.stopCommentListener,
-        currentAccountId,
-      )
-      setIsListening('stopped')
-      toast.success('已停止监听评论')
-    } catch (_error) {
-      toast.error('停止监听评论失败')
-    }
-  }
 
   const accountName = useCurrentLiveControl(ctx => ctx.accountName)
 
-  const filteredComments = useMemo(
-    () => (hideHost ? comments.filter(comment => comment.nick_name !== accountName) : comments),
-    [comments, hideHost, accountName],
-  )
+  // 纯文字评论类型
+  const commentTypes: Message['msg_type'][] = [
+    'comment',
+    'wechat_channel_live_msg',
+    'xiaohongshu_comment',
+    'taobao_comment',
+  ]
 
-  const _isButtonDisabled = isListening === 'waiting' || gate.disabled
+  const filteredComments = useMemo(() => {
+    if (!hideHost) return comments
+
+    // 开启"仅用户评论"时：过滤掉主播评论 + 只保留文字弹幕类型
+    return comments.filter(
+      comment => comment.nick_name !== accountName && commentTypes.includes(comment.msg_type),
+    )
+  }, [comments, hideHost, accountName])
 
   const statusLabel =
     isListening === 'listening'
@@ -222,58 +179,11 @@ export default function CommentList({
             <CardDescription>实时显示直播间的评论内容</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {isListening === 'listening' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={stopListening}
-                className="flex items-center gap-1"
-              >
-                <Pause className="h-4 w-4" />
-                停止监听
-              </Button>
-            ) : (
-              <GateButton
-                gate={gate}
-                onClick={startListening}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-1"
-                disabled={isListening === 'waiting'}
-              >
-                {isListening === 'waiting' ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    连接中...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4" />
-                    开始监听
-                  </>
-                )}
-              </GateButton>
-            )}
-
-            {gate.connectionState === 'connected' && (
-              <>
-                {isListening === 'error' && (
-                  <Button variant="ghost" size="icon" onClick={startListening} title="重试">
-                    <RefreshCcw className="h-4 w-4" />
-                  </Button>
-                )}
-
-                {isListening === 'listening' && (
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      id={userCommentOnlyId}
-                      checked={hideHost}
-                      onCheckedChange={setHideHost}
-                    />
-                    <Label htmlFor={userCommentOnlyId}>仅用户评论</Label>
-                  </div>
-                )}
-              </>
+            {isListening === 'listening' && (
+              <div className="flex items-center gap-2">
+                <Switch id={userCommentOnlyId} checked={hideHost} onCheckedChange={setHideHost} />
+                <Label htmlFor={userCommentOnlyId}>仅用户评论</Label>
+              </div>
             )}
           </div>
         </div>
@@ -287,14 +197,15 @@ export default function CommentList({
           <div className="py-2 space-y-0.5">
             {filteredComments.length === 0 ? (
               <div className="flex items-center justify-center h-20 text-muted-foreground">
-                {isListening === 'listening' ? '暂无评论数据' : '请点击"开始监听"按钮开始接收评论'}
+                {isListening === 'listening'
+                  ? '暂无评论数据'
+                  : '请点击右上角"开始任务"按钮开始接收评论'}
               </div>
             ) : (
               filteredComments.map(comment => (
                 <MessageItem
                   key={comment.msg_id}
                   message={comment}
-                  // isHost={comment.nick_name === accountName}
                   isHighlighted={highlightedCommentId === comment.msg_id}
                 />
               ))

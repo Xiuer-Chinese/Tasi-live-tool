@@ -11,6 +11,7 @@ import { type AIProvider, type ChatMessage, useAIChatStore } from './useAIChat'
 import { type AutoReplyConfig, useAutoReplyConfig } from './useAutoReplyConfig'
 import { useErrorHandler } from './useErrorHandler'
 import { useCurrentLiveControl, useLiveControlStore } from './useLiveControl'
+import { useLiveStatsStore } from './useLiveStats'
 
 interface ReplyPreview {
   id: string
@@ -346,9 +347,24 @@ export function useAutoReply() {
     // const context = contexts[accountId] || createDefaultContext()
     const currentContext =
       useAutoReplyStore.getState().contexts[accountId] || createDefaultContext()
-    const { isRunning, comments: allComments, replies: allReplies } = currentContext
+    const {
+      isRunning,
+      isListening: autoReplyListening,
+      comments: allComments,
+      replies: allReplies,
+    } = currentContext
 
-    store.addComment(accountId, comment)
+    // 只在监听状态时添加评论到列表
+    if (autoReplyListening === 'listening') {
+      store.addComment(accountId, comment)
+    }
+
+    // 同步到 LiveStats 统计模块（仅在监听时）
+    const liveStatsContext = useLiveStatsStore.getState().contexts[accountId]
+    if (liveStatsContext?.isListening) {
+      useLiveStatsStore.getState().handleMessage(accountId, comment)
+    }
+
     if (!isRunning) {
       return
     }

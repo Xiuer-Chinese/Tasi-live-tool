@@ -138,6 +138,45 @@ export interface IpcChannels {
 
   // Log
   [IPC_CHANNELS.log]: (message: LogMessage) => void
+
+  // LiveStats
+  [IPC_CHANNELS.liveStats.exportData]: (data: {
+    accountName: string
+    startTime: number | null
+    endTime: number
+    duration: number
+    stats: {
+      likeCount: number
+      commentCount: number
+      enterCount: number
+      followCount: number
+      fansClubCount: number
+      orderCount: number
+      paidOrderCount: number
+      brandVipCount: number
+    }
+    danmuList: Array<{
+      nickName: string
+      content: string
+      time: string
+    }>
+    fansClubChanges: Array<{
+      id: string
+      nickName: string
+      userId?: string
+      content?: string
+      time: string
+    }>
+    events: Array<{
+      id: string
+      type: string
+      nickName: string
+      content?: string
+      time: string
+      extra?: Record<string, unknown>
+    }>
+  }) => Promise<{ success: boolean; filePath?: string; error?: string }>
+  [IPC_CHANNELS.liveStats.openExportFolder]: () => void
 }
 
 export interface ElectronAPI {

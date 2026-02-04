@@ -103,9 +103,9 @@ function logWindowDebug(phase: string, w: BrowserWindow | null = win): void {
 /** 开发模式：等待 localhost:5173 可连接再 loadURL，避免 ERR_CONNECTION_REFUSED 白屏 */
 function waitForDevServer(
   url: string,
-  maxWaitMs = 30000,
-  intervalMs = 500,
-  initialDelayMs = 3000,
+  maxWaitMs = 60000,
+  intervalMs = 1000,
+  initialDelayMs = 5000,
 ): Promise<void> {
   let host = '127.0.0.1'
   let port = 5173
@@ -211,8 +211,8 @@ async function createWindow() {
     windowManager.setMainWindow(win)
 
     // 仅开发环境：从 Vite 开发服务器加载（localhost:5173）。打包后 VITE_DEV_SERVER_URL 未注入，走 else 分支 loadFile，不会出现“连不上 5173”的白屏。
-    const DEV_LOAD_RETRY_MAX = 2
-    const DEV_LOAD_RETRY_DELAY_MS = 4000
+    const DEV_LOAD_RETRY_MAX = 5
+    const DEV_LOAD_RETRY_DELAY_MS = 6000
     let devLoadRetryCount = 0
 
     if (VITE_DEV_SERVER_URL) {

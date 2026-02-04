@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>管理员 - 用户管理</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 16px; background: #f5f5f5; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { margin: 0 0 16px; font-size: 1.25rem; }
+    .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .form-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    input[type="text"], input[type="password"] { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    button { padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid #ddd; background: #fff; }
+    button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    button.danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+    button.small { padding: 4px 10px; font-size: 12px; margin-right: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f9fafb; font-weight: 600; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+    .badge.disabled { background: #fef2f2; color: #b91c1c; }
+    .badge.active { background: #f0fdf4; color: #15803d; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 100; align-items: center; justify-content: center; }
+    .modal.show { display: flex; }
+    .modal-content { background: #fff; padding: 20px; border-radius: 8px; min-width: 320px; max-width: 90%; }
+    .modal-title { margin: 0 0 12px; font-size: 1rem; }
+    .modal-actions { margin-top: 16px; display: flex; gap: 8px; justify-content: flex-end; }
+    .error { color: #b91c1c; font-size: 13px; margin-top: 8px; }
+    .temp-password { font-family: monospace; background: #f3f4f6; padding: 8px 12px; border-radius: 6px; margin: 8px 0; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loginCard" class="card">
+      <h1>管理员登录</h1>
+      <div class="form-row">
+        <input type="text" id="adminUser" placeholder="管理员账号" />
+        <input type="password" id="adminPass" placeholder="密码" />
+        <button type="button" class="primary" id="btnLogin">登录</button>
+      </div>
+      <p id="loginError" class="error" style="display:none;"></p>
+    </div>
+
+    <div id="usersCard" class="card" style="display:none;">
+      <h1>用户列表</h1>
+      <table>
+        <thead>
+          <tr>
+            <th>账号</th>
+            <th>状态</th>
+            <th>创建时间</th>
+            <th>试用截止</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+      <p id="usersError" class="error" style="display:none;"></p>
+    </div>
+  </div>
+
+  <div id="modalReset" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">重置密码</div>
+      <p>为用户 <strong id="resetUsername"></strong> 设置新密码（至少 8 位）：</p>
+      <input type="password" id="newPassword" placeholder="新密码" minlength="8" style="width:100%;" />
+      <div class="modal-actions">
+        <button type="button" id="modalResetCancel">取消</button>
+        <button type="button" class="primary" id="modalResetSubmit">确认</button>
+      </div>
+      <p id="modalResetError" class="error" style="display:none;"></p>
+    </div>
+  </div>
+
+  <div id="modalTemp" class="modal">
+    <div class="modal-content">
+      <div class="modal-title">临时密码（仅显示一次，请复制保存）</div>
+      <p>用户 <strong id="tempUsername"></strong> 的临时密码：</p>
+      <div class="temp-password" id="tempPasswordValue"></div>
+      <button type="button" class="primary small" id="btnCopyTemp">复制</button>
+      <div class="modal-actions">
+        <button type="button" id="modalTempClose">关闭</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modalToggle" class="modal">
+    <div class="modal-content">
+      <div class="modal-title" id="modalToggleTitle">禁用/启用</div>
+      <p id="modalToggleText"></p>
+      <div class="modal-actions">
+        <button type="button" id="modalToggleCancel">取消</button>
+        <button type="button" class="primary" id="modalToggleConfirm">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let token = sessionStorage.getItem('admin_token') || '';
+
+    function headers() {
+      return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    }
+
+    function show(el, show) { el.style.display = show ? '' : 'none'; }
+    function showError(el, msg) { el.textContent = msg || ''; el.style.display = msg ? '' : 'none'; }
+
+    document.getElementById('btnLogin').onclick = async () => {
+      const user = document.getElementById('adminUser').value.trim();
+      const pass = document.getElementById('adminPass').value;
+      const errEl = document.getElementById('loginError');
+      if (!user || !pass) { showError(errEl, '请输入账号和密码'); return; }
+      showError(errEl, '');
+      try {
+        const r = await fetch(API_BASE + '/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: user, password: pass })
+        });
+        const data = await r.json();
+        if (r.ok && data.token) {
+          token = data.token;
+          sessionStorage.setItem('admin_token', token);
+          show(document.getElementById('loginCard'), false);
+          show(document.getElementById('usersCard'), true);
+          loadUsers();
+        } else {
+          showError(errEl, data.detail?.message || '登录失败');
+        }
+      } catch (e) {
+        showError(errEl, '网络错误，请重试');
+      }
+    };
+
+    async function loadUsers() {
+      const tbody = document.getElementById('usersBody');
+      const errEl = document.getElementById('usersError');
+      tbody.innerHTML = '';
+      showError(errEl, '');
+      try {
+        const r = await fetch(API_BASE + '/admin/users?page=1&size=100', { headers: headers() });
+        if (r.status === 401) { token = ''; sessionStorage.removeItem('admin_token'); location.reload(); return; }
+        const list = await r.json();
+        if (!Array.isArray(list)) { showError(errEl, list.detail?.message || '加载失败'); return; }
+        list.forEach(u => {
+          const tr = document.createElement('tr');
+          const statusCls = u.disabled ? 'disabled' : 'active';
+          const statusText = u.disabled ? '已禁用' : '正常';
+          const created = u.created_at ? u.created_at.slice(0, 19).replace('T', ' ') : '-';
+          const trialEnd = u.trial_end ? new Date(u.trial_end * 1000).toLocaleString() : '-';
+          tr.innerHTML =
+            '<td>' + escapeHtml(u.username) + '</td>' +
+            '<td><span class="badge ' + statusCls + '">' + statusText + '</span></td>' +
+            '<td>' + escapeHtml(created) + '</td>' +
+            '<td>' + escapeHtml(trialEnd) + '</td>' +
+            '<td>' +
+            '<button type="button" class="small btnReset" data-username="' + escapeAttr(u.username) + '">重置密码</button>' +
+            '<button type="button" class="small btnTemp" data-username="' + escapeAttr(u.username) + '">生成临时密码</button>' +
+            '<button type="button" class="small ' + (u.disabled ? 'btnEnable' : 'btnDisable') + '" data-username="' + escapeAttr(u.username) + '" data-disabled="' + u.disabled + '">' + (u.disabled ? '启用' : '禁用') + '</button>' +
+            '</td>';
+          tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('.btnReset').forEach(btn => btn.onclick = () => openResetModal(btn.dataset.username));
+        tbody.querySelectorAll('.btnTemp').forEach(btn => btn.onclick = () => genTempPassword(btn.dataset.username));
+        tbody.querySelectorAll('.btnDisable').forEach(btn => btn.onclick = () => openToggleModal(btn.dataset.username, true));
+        tbody.querySelectorAll('.btnEnable').forEach(btn => btn.onclick = () => openToggleModal(btn.dataset.username, false));
+      } catch (e) {
+        showError(errEl, '加载用户列表失败');
+      }
+    }
+
+    function escapeHtml(s) { const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+    function escapeAttr(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+    let currentResetUsername = '';
+    function openResetModal(username) {
+      currentResetUsername = username;
+      document.getElementById('resetUsername').textContent = username;
+      document.getElementById('newPassword').value = '';
+      showError(document.getElementById('modalResetError'), '');
+      document.getElementById('modalReset').classList.add('show');
+    }
+    document.getElementById('modalResetCancel').onclick = () => document.getElementById('modalReset').classList.remove('show');
+    document.getElementById('modalResetSubmit').onclick = async () => {
+      const newPass = document.getElementById('newPassword').value;
+      const errEl = document.getElementById('modalResetError');
+      if (newPass.length < 8) { showError(errEl, '密码至少 8 位'); return; }
+      showError(errEl, '');
+      try {
+        const r = await fetch(API_BASE + '/admin/reset-password', {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ username: currentResetUsername, new_password: newPass })
+        });
+        const data = await r.json();
+        if (r.ok && data.success) {
+          document.getElementById('modalReset').classList.remove('show');
+          loadUsers();
+        } else {
+          showError(errEl, data.detail?.message || data.detail?.detail || '操作失败');
+        }
+      } catch (e) {
+        showError(errEl, '网络错误');
+      }
+    };
+
+    async function genTempPassword(username) {
+      try {
+        const r = await fetch(API_BASE + '/admin/reset-password', {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ username: username, generate_temp: true })
+        });
+        const data = await r.json();
+        if (r.ok && data.success && data.temp_password) {
+          document.getElementById('tempUsername').textContent = username;
+          document.getElementById('tempPasswordValue').textContent = data.temp_password;
+          document.getElementById('modalTemp').classList.add('show');
+          document.getElementById('btnCopyTemp').onclick = () => {
+            navigator.clipboard.writeText(data.temp_password);
+            document.getElementById('btnCopyTemp').textContent = '已复制';
+          };
+        } else {
+          alert(data.detail?.message || data.detail?.detail || '操作失败');
+        }
+      } catch (e) {
+        alert('网络错误');
+      }
+    }
+    document.getElementById('modalTempClose').onclick = () => document.getElementById('modalTemp').classList.remove('show');
+
+    let currentToggleUsername = '';
+    let currentToggleDisabled = false;
+    function openToggleModal(username, disabled) {
+      currentToggleUsername = username;
+      currentToggleDisabled = disabled;
+      document.getElementById('modalToggleTitle').textContent = disabled ? '禁用用户' : '启用用户';
+      document.getElementById('modalToggleText').textContent = '确定要' + (disabled ? '禁用' : '启用') + '用户「' + username + '」吗？';
+      document.getElementById('modalToggle').classList.add('show');
+    }
+    document.getElementById('modalToggleCancel').onclick = () => document.getElementById('modalToggle').classList.remove('show');
+    document.getElementById('modalToggleConfirm').onclick = async () => {
+      try {
+        const r = await fetch(API_BASE + '/admin/toggle-disabled', {
+          method: 'POST',
+          headers: headers(),
+          body: JSON.stringify({ username: currentToggleUsername, disabled: currentToggleDisabled })
+        });
+        const data = await r.json();
+        if (r.ok && data.success) {
+          document.getElementById('modalToggle').classList.remove('show');
+          loadUsers();
+        } else {
+          alert(data.detail?.message || data.detail?.detail || '操作失败');
+        }
+      } catch (e) {
+        alert('网络错误');
+      }
+    };
+
+    if (token) {
+      show(document.getElementById('loginCard'), false);
+      show(document.getElementById('usersCard'), true);
+      loadUsers();
+    }
+  </script>
+</body>
+</html>

@@ -2,6 +2,7 @@ import { useMemoizedFn } from 'ahooks'
 import { Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router'
+import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { autoReplyPlatforms } from '@/abilities'
 import { Title } from '@/components/common/Title'
 import { GateButton } from '@/components/GateButton'
@@ -10,19 +11,24 @@ import { Button } from '@/components/ui/button'
 import { useAccounts } from '@/hooks/useAccounts'
 import { useRequireAuthForAction } from '@/hooks/useAuth'
 import { useAutoReply } from '@/hooks/useAutoReply'
+import { useAutoReplyConfig } from '@/hooks/useAutoReplyConfig'
 import { useAutoStopOnGateLoss } from '@/hooks/useAutoStopOnGateLoss'
 import { useCurrentLiveControl } from '@/hooks/useLiveControl'
 import { useLiveFeatureGate } from '@/hooks/useLiveFeatureGate'
+import { useLiveStatsStore } from '@/hooks/useLiveStats'
+import { useToast } from '@/hooks/useToast'
 import CommentList from '@/pages/AutoReply/components/CommentList'
 import PreviewList from '@/pages/AutoReply/components/PreviewList'
 import { stopAllLiveTasks } from '@/utils/stopAllLiveTasks'
 
 export default function AutoReply() {
-  const { isRunning, setIsRunning, isListening } = useAutoReply()
+  const { isRunning, setIsRunning, isListening, setIsListening } = useAutoReply()
   const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(null)
   const gate = useLiveFeatureGate()
   const { currentAccountId } = useAccounts()
   const navigate = useNavigate()
+  const { config } = useAutoReplyConfig()
+  const { toast } = useToast()
 
   // 自动停机：当 Gate 条件不满足时，自动停止任务
   // 注意：自动回复的实际运行状态是 isListening，不是 isRunning
@@ -45,17 +51,49 @@ export default function AutoReply() {
   // 引入登录检查 Hook
   const { requireAuthForAction } = useRequireAuthForAction('auto-reply')
 
+  // 启动评论监听
+  const startListening = async () => {
+    try {
+      setIsListening('waiting')
+      console.log(`[AutoReply] Starting comment listener for account ${currentAccountId}`)
+      const result = await window.ipcRenderer.invoke(
+        IPC_CHANNELS.tasks.autoReply.startCommentListener,
+        currentAccountId,
+        {
+          source: config.entry,
+          ws: config.ws?.enable ? { port: config.ws.port } : undefined,
+        },
+      )
+      if (!result) throw new Error('监听评论失败')
+      setIsListening('listening')
+      // 同步 LiveStats 的监听状态
+      useLiveStatsStore.getState().setListening(currentAccountId, true)
+      console.log('[AutoReply] Comment listener started successfully')
+      return true
+    } catch (error) {
+      setIsListening('error')
+      toast.error('监听评论失败')
+      console.error('[AutoReply] Failed to start comment listener:', error)
+      return false
+    }
+  }
+
   const handleAutoReplyToggle = useMemoizedFn(async () => {
     if (!isRunning) {
       // 启动任务：先检查登录，然后执行启动逻辑
       await requireAuthForAction(async () => {
         // 前置校验由 GateButton 处理
-        // 注意：实际的监听启动在 CommentList 的 startListening 中
-        setIsRunning(true)
+        // 开始任务时自动启动监听
+        const success = await startListening()
+        if (success) {
+          setIsRunning(true)
+          toast.success('自动回复已启动')
+        }
       })
     } else {
       // 停止任务（不需要登录检查）
       setIsRunning(false)
+      toast.success('自动回复已停止')
     }
   })
 

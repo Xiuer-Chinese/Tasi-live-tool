@@ -75,4 +75,8 @@ export const IPC_CHANNELS = {
     getHideToTrayTipDismissed: 'app:getHideToTrayTipDismissed',
     clearLocalLoginData: 'app:clearLocalLoginData',
   },
+  liveStats: {
+    exportData: 'liveStats:exportData',
+    openExportFolder: 'liveStats:openExportFolder',
+  },
 } as const
