@@ -1,4 +1,4 @@
-import { BookOpen, X } from 'lucide-react'
+import { BookOpen, Check, Minus, X } from 'lucide-react'
 import { useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import { Button } from '@/components/ui/button'
@@ -12,28 +12,75 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 
-// 用户使用手册内容
-const USER_GUIDE_CONTENT = `# 🎯 TASI 直播超级工具 - 用户使用手册
+// 平台功能支持数据
+const PLATFORM_FEATURES = [
+  { name: '抖音', autoReply: true, autoMessage: true, autoPopup: true, dataMonitor: true },
+  { name: '抖音百应', autoReply: true, autoMessage: true, autoPopup: true, dataMonitor: true },
+  { name: '视频号', autoReply: true, autoMessage: true, autoPopup: true, dataMonitor: true },
+  { name: '小红书', autoReply: true, autoMessage: true, autoPopup: false, dataMonitor: true },
+  { name: '淘宝', autoReply: true, autoMessage: true, autoPopup: false, dataMonitor: true },
+  { name: '快手', autoReply: false, autoMessage: true, autoPopup: false, dataMonitor: false },
+  { name: '抖店 EOS', autoReply: false, autoMessage: true, autoPopup: false, dataMonitor: false },
+]
 
-欢迎使用 TASI 直播超级工具！本工具旨在帮助主播和运营人员提升直播效率，实现自动化运营。
+// 平台支持表格组件
+function PlatformSupportTable() {
+  return (
+    <div className="my-4 overflow-hidden rounded-lg border border-border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-muted/50">
+            <th className="px-4 py-3 text-left font-medium text-foreground">平台</th>
+            <th className="px-3 py-3 text-center font-medium text-foreground">自动回复</th>
+            <th className="px-3 py-3 text-center font-medium text-foreground">自动发言</th>
+            <th className="px-3 py-3 text-center font-medium text-foreground">自动弹窗</th>
+            <th className="px-3 py-3 text-center font-medium text-foreground">数据监控</th>
+          </tr>
+        </thead>
+        <tbody>
+          {PLATFORM_FEATURES.map((platform, index) => (
+            <tr
+              key={platform.name}
+              className={cn(
+                'border-t border-border transition-colors hover:bg-muted/30',
+                index % 2 === 0 ? 'bg-background' : 'bg-muted/10',
+              )}
+            >
+              <td className="px-4 py-2.5 font-medium text-foreground">{platform.name}</td>
+              <td className="px-3 py-2.5 text-center">
+                <FeatureIcon supported={platform.autoReply} />
+              </td>
+              <td className="px-3 py-2.5 text-center">
+                <FeatureIcon supported={platform.autoMessage} />
+              </td>
+              <td className="px-3 py-2.5 text-center">
+                <FeatureIcon supported={platform.autoPopup} />
+              </td>
+              <td className="px-3 py-2.5 text-center">
+                <FeatureIcon supported={platform.dataMonitor} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
 
----
+function FeatureIcon({ supported }: { supported: boolean }) {
+  return supported ? (
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-500/10">
+      <Check className="w-4 h-4 text-green-500" />
+    </span>
+  ) : (
+    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted">
+      <Minus className="w-4 h-4 text-muted-foreground" />
+    </span>
+  )
+}
 
-## 🌐 支持平台
-
-| 平台 | 自动回复 | 自动发言 | 自动弹窗 | 数据监控 |
-|-----|---------|---------|---------|---------|
-| **抖音** | ✅ | ✅ | ✅ | ✅ |
-| **抖音百应** | ✅ | ✅ | ✅ | ✅ |
-| **视频号** | ✅ | ✅ | ✅ | ✅ |
-| **小红书** | ✅ | ✅ | - | ✅ |
-| **淘宝** | ✅ | ✅ | - | ✅ |
-| **快手** | - | ✅ | - | - |
-| **抖店 EOS** | - | ✅ | - | - |
-
----
-
-## 🚀 快速开始
+// 用户使用手册内容（从"快速开始"部分开始，前面的标题和平台支持表格已单独渲染）
+const USER_GUIDE_CONTENT = `## 🚀 快速开始
 
 ### 第一步：安装并启动
 
@@ -235,6 +282,23 @@ export function UserGuideDialog({ trigger, className }: UserGuideDialogProps) {
         </DialogHeader>
         <ScrollArea className="flex-1 px-6 py-4">
           <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:mt-4 prose-headings:mb-2 prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 prose-table:my-2">
+            {/* 标题和介绍 */}
+            <h1 className="text-xl font-bold text-foreground border-b pb-2 mb-4">
+              🎯 TASI 直播超级工具 - 用户使用手册
+            </h1>
+            <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+              欢迎使用 TASI 直播超级工具！本工具旨在帮助主播和运营人员提升直播效率，实现自动化运营。
+            </p>
+
+            {/* 支持平台（自定义组件） */}
+            <h2 className="text-lg font-semibold text-foreground mt-6 mb-3 flex items-center gap-2">
+              🌐 支持平台
+            </h2>
+            <PlatformSupportTable />
+
+            <hr className="my-4 border-border" />
+
+            {/* 其余 Markdown 内容 */}
             <ReactMarkdown
               components={{
                 h1: ({ children }) => (
