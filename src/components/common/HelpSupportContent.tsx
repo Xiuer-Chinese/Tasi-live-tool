@@ -1,6 +1,7 @@
-import { ChevronDown, Copy, MessageCircle } from 'lucide-react'
+import { BookOpen, ChevronDown, Copy, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   HELP_FAQ_ITEMS,
@@ -10,8 +11,9 @@ import {
 } from '@/constants/helpSupport'
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
+import { UserGuideDialog } from './UserGuideDialog'
 
-const INTRO_TEXT = `如果你在使用过程中遇到问题，建议先查看下方的常见问题。
+const INTRO_TEXT = `如果你在使用过程中遇到问题，建议先查看使用教程或下方的常见问题。
 如果问题仍未解决，可以通过下方方式联系支持。`
 
 const CONTACT_TIP = '添加微信时，请备注【软件名 + 问题简述】，以便更快处理。'
@@ -33,6 +35,27 @@ export function HelpSupportContent() {
   return (
     <div className="space-y-5">
       <p className="text-sm text-muted-foreground whitespace-pre-line">{INTRO_TEXT}</p>
+
+      {/* 使用教程卡片 */}
+      <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2">
+            <BookOpen className="h-5 w-5 text-primary" />
+            使用教程
+          </CardTitle>
+          <CardDescription>详细了解各功能模块的使用方法，快速上手直播工具</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <UserGuideDialog
+            trigger={
+              <Button className="gap-2">
+                <BookOpen className="h-4 w-4" />
+                查看完整教程
+              </Button>
+            }
+          />
+        </CardContent>
+      </Card>
 
       <div>
         <h3 className="text-sm font-medium mb-2">常见问题</h3>
