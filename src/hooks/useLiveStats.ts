@@ -38,6 +38,7 @@ export interface LiveEvent {
   id: string
   type: LiveMessage['msg_type']
   nickName: string
+  userId?: string // 导出用户行为明细时用于聚合
   content?: string
   time: string
   extra?: Record<string, unknown>
@@ -149,11 +150,12 @@ export const useLiveStatsStore = create<LiveStatsState & LiveStatsActions>()(
         set(state => {
           const context = ensureContext(state, accountId)
 
-          // 创建事件记录
+          // 创建事件记录（userId 用于导出时的用户级聚合）
           const event: LiveEvent = {
             id: message.msg_id || crypto.randomUUID(),
             type: message.msg_type,
             nickName: message.nick_name,
+            userId: (message as { user_id?: string }).user_id,
             time: message.time,
           }
 
@@ -206,6 +208,7 @@ export const useLiveStatsStore = create<LiveStatsState & LiveStatsActions>()(
               event.extra = {
                 orderStatus: message.order_status,
                 productId: message.product_id,
+                orderTs: message.order_ts,
               }
               break
 

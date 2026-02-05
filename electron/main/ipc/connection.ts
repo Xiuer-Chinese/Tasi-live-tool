@@ -29,7 +29,11 @@ function setupIpcHandlers() {
             logger.error('连接直播控制台失败：', error)
             accountManager.closeSession(account.id)
             // 发送连接失败事件
-            windowManager.send(IPC_CHANNELS.tasks.liveControl.disconnectedEvent, account.id)
+            windowManager.send(
+              IPC_CHANNELS.tasks.liveControl.disconnectedEvent,
+              account.id,
+              error instanceof Error ? error.message : '连接直播控制台失败',
+            )
           })
 
         // 立即返回 true，表示浏览器启动流程已开始

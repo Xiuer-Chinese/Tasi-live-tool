@@ -6,6 +6,7 @@
   "asarUnpack": [
     "node_modules/better-sqlite3/**",
     "node_modules/playwright/**",
+    "node_modules/playwright-core/**",
     "node_modules/playwright-extra/**",
     "node_modules/playwright-extra-plugin-stealth/**",
     "node_modules/puppeteer-extra-plugin-stealth/**"
@@ -14,6 +15,7 @@
     "app": ".",
     "output": "release/${version}"
   },
+  "compression": "maximum",
   "files": [
     "dist/**/*",
     "dist-electron/**/*",
@@ -46,7 +48,7 @@
   "win": {
     "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "zip", "arch": ["x64"] }],
     "icon": "public/favicon.ico",
-    "artifactName": "TASI-live-Supertool_V1.0_win-x64.${ext}"
+    "artifactName": "TASI-live-Supertool_${version}_win-x64.${ext}"
   },
   "nsis": {
     "oneClick": false,

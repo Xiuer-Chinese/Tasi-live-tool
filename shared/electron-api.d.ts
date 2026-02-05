@@ -14,7 +14,7 @@ export interface IpcChannels {
     account: Account
   }) => Promise<{ success: boolean; browserLaunched: boolean; error?: string }>
   [IPC_CHANNELS.tasks.liveControl.disconnect]: (accountId: string) => boolean
-  [IPC_CHANNELS.tasks.liveControl.disconnectedEvent]: (id: string) => void
+  [IPC_CHANNELS.tasks.liveControl.disconnectedEvent]: (id: string, reason?: string) => void
   [IPC_CHANNELS.tasks.liveControl.notifyAccountName]: (
     params:
       | {

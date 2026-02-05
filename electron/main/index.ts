@@ -11,6 +11,7 @@ const UNPACKED_EXTERNALS = new Set([
   'better-sqlite3',
   'electron-updater',
   'playwright',
+  'playwright-core',
   'playwright-extra',
   'playwright-extra-plugin-stealth',
   'puppeteer-extra-plugin-stealth',

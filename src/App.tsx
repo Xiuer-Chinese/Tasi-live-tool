@@ -47,9 +47,15 @@ function _useGlobalIpcListener() {
     handleComment(comment, accountId)
   })
 
-  useIpcListener(IPC_CHANNELS.tasks.liveControl.disconnectedEvent, async id => {
-    console.log(`[Connection] Disconnected event received for account ${id}`)
-    setConnectState(id, { status: 'disconnected', error: '直播控制台已断开连接' })
+  useIpcListener(IPC_CHANNELS.tasks.liveControl.disconnectedEvent, async (id, reason) => {
+    console.log(`[Connection] Disconnected event received for account ${id}`, reason ?? '')
+    setConnectState(id, {
+      status: 'disconnected',
+      error: reason || '直播控制台已断开连接',
+    })
+    if (reason) {
+      toast.error(reason)
+    }
 
     // 停止所有任务：autoSpeak 使用 TaskManager，autoReply/autoPopup 使用旧逻辑
     console.log(`[TaskManager] Connection disconnected, stopping all tasks for account ${id}`)

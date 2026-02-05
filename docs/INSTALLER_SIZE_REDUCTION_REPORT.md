@@ -135,3 +135,27 @@
 ## 六、总结
 
 通过**关闭生产 sourcemap**、**在 electron-builder 中排除 \*.map 与 test/docs/cache**、以及 **afterPack 时排除仅开发/构建用 node_modules**，Windows 安装包从约 **286 MB 降至约 112 MB**，体积减少约 **61%**，且满足不删运行必需文件、不改业务逻辑、不引入新依赖的约束。
+
+---
+
+## 七、V2 优化补充（白名单复制 + 进一步裁剪）
+
+### 7.1 本次优化策略
+
+- **afterPack 改为“白名单复制”**：仅保留主进程运行必需依赖及其关键子依赖。
+- **清理 Native 模块源码**：移除 `better-sqlite3/deps` 和 `better-sqlite3/src`。
+- **裁剪多平台二进制**：`7zip-bin` 仅保留 win/x64。
+- **删除 Playwright 调试资源**：移除 `playwright-core/lib/vite` 与 `mcpBundleImpl`。
+
+### 7.2 体积变化（当前 release/1.0.0）
+
+| 产物 | 优化前 | 优化后 | 变化 |
+|------|--------|--------|------|
+| **TASI-live-Supertool_V1.0_win-x64.exe** | **98.55 MB** | **88.52 MB** | **−10.03 MB（约 −10.2%）** |
+| **TASI-live-Supertool_V1.0_win-x64.zip** | **130.97 MB** | **119.82 MB** | **−11.15 MB（约 −8.5%）** |
+| **app.asar.unpacked/node_modules** | **86.54 MB** | **48.06 MB** | **−38.48 MB（约 −44.5%）** |
+
+### 7.3 说明
+
+- 此阶段收益主要来自 **剔除渲染进程依赖、构建工具链、源码与调试资源**。
+- 运行时必需的依赖（`playwright`、`better-sqlite3`、`electron-updater` 等）仍完整保留。

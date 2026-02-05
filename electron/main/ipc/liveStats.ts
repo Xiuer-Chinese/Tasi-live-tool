@@ -41,6 +41,7 @@ interface LiveStatsExportData {
     id: string
     type: string
     nickName: string
+    userId?: string
     content?: string
     time: string
     extra?: Record<string, unknown>
@@ -87,21 +88,79 @@ function formatDuration(seconds: number): string {
   return `${secs}秒`
 }
 
-// 获取事件类型中文名
-function getEventTypeName(type: string): string {
-  const typeMap: Record<string, string> = {
-    comment: '评论',
-    wechat_channel_live_msg: '评论',
-    xiaohongshu_comment: '评论',
-    taobao_comment: '评论',
-    room_enter: '进入直播间',
-    room_like: '点赞',
-    room_follow: '关注',
-    ecom_fansclub_participate: '加入粉丝团',
-    subscribe_merchant_brand_vip: '加入品牌会员',
-    live_order: '下单',
+const COMMENT_TYPES = new Set([
+  'comment',
+  'wechat_channel_live_msg',
+  'xiaohongshu_comment',
+  'taobao_comment',
+])
+
+interface UserBehaviorRow {
+  user_id: string
+  enter_time: string
+  has_comment: boolean
+  comment_text: string
+  comment_count: number
+  has_follow: boolean
+  has_order: boolean
+  order_time: string
+  comment_type: string
+}
+
+function buildUserBehaviorRows(events: LiveStatsExportData['events']): UserBehaviorRow[] {
+  const userMap = new Map<
+    string,
+    {
+      userId: string
+      enterTime: string
+      comments: { text: string; type: string }[]
+      hasFollow: boolean
+      hasOrder: boolean
+      orderTime: string
+    }
+  >()
+
+  for (const ev of events) {
+    const key = ev.userId || ev.nickName
+    let u = userMap.get(key)
+    if (!u) {
+      u = {
+        userId: key,
+        enterTime: '',
+        comments: [],
+        hasFollow: false,
+        hasOrder: false,
+        orderTime: '',
+      }
+      userMap.set(key, u)
+    }
+
+    if (ev.type === 'room_enter') {
+      if (!u.enterTime || ev.time < u.enterTime) u.enterTime = ev.time
+    } else if (COMMENT_TYPES.has(ev.type)) {
+      u.comments.push({ text: ev.content || '', type: ev.type })
+    } else if (ev.type === 'room_follow') {
+      u.hasFollow = true
+    } else if (ev.type === 'live_order') {
+      u.hasOrder = true
+      if (!u.orderTime) {
+        const ts = ev.extra?.orderTs as number | undefined
+        u.orderTime = typeof ts === 'number' ? new Date(ts).toLocaleString('zh-CN') : ev.time
+      }
+    }
   }
-  return typeMap[type] || type
+
+  return Array.from(userMap.entries()).map(([, u]) => ({
+    user_id: u.userId,
+    enter_time: u.enterTime,
+    has_comment: u.comments.length > 0,
+    comment_text: u.comments.map(c => c.text).join(' | '),
+    comment_count: u.comments.length,
+    has_follow: u.hasFollow,
+    has_order: u.hasOrder,
+    order_time: u.hasOrder ? u.orderTime : '',
+    comment_type: u.comments[0]?.type ?? '',
+  }))
 }
 
 // 导出数据到 Excel
@@ -112,73 +171,175 @@ async function exportToExcel(data: LiveStatsExportData): Promise<string> {
   const fileName = `直播数据_${safeAccountName}_${dateTimeStr}.xlsx`
   const filePath = path.join(exportFolder, fileName)
 
-  // 创建工作簿
-  const workbook = XLSX.utils.book_new()
-
-  // Sheet 1: 统计概览
-  const overviewData = [
-    ['直播数据统计报告'],
-    [],
-    ['基本信息'],
-    ['账号名称', data.accountName || '未知'],
-    ['开始时间', data.startTime ? new Date(data.startTime).toLocaleString('zh-CN') : '未记录'],
-    ['结束时间', new Date(data.endTime).toLocaleString('zh-CN')],
-    ['监控时长', formatDuration(data.duration)],
-    [],
-    ['数据统计'],
-    ['指标', '数量'],
-    ['点赞数', data.stats.likeCount],
-    ['弹幕数', data.stats.commentCount],
-    ['进入直播间', data.stats.enterCount],
-    ['新增关注', data.stats.followCount],
-    ['加入粉丝团', data.stats.fansClubCount],
-    ['订单数（已下单）', data.stats.orderCount],
-    ['订单数（已付款）', data.stats.paidOrderCount],
-    ['品牌会员', data.stats.brandVipCount],
+  const allRows = buildUserBehaviorRows(data.events)
+  const cols = [
+    { wch: 18 },
+    { wch: 20 },
+    { wch: 10 },
+    { wch: 40 },
+    { wch: 12 },
+    { wch: 10 },
+    { wch: 10 },
+    { wch: 20 },
+    { wch: 20 },
   ]
-  const overviewSheet = XLSX.utils.aoa_to_sheet(overviewData)
 
-  // 设置列宽
-  overviewSheet['!cols'] = [{ wch: 20 }, { wch: 30 }]
+  const workbook = XLSX.utils.book_new()
+  const header = [
+    'user_id',
+    'enter_time',
+    'has_comment',
+    'comment_text',
+    'comment_count',
+    'has_follow',
+    'has_order',
+    'order_time',
+    'comment_type',
+  ]
 
-  // 合并标题单元格
-  overviewSheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
+  // Sheet1: 用户行为明细-全量
+  const sheet1Data = [
+    header,
+    ...allRows.map(r => [
+      r.user_id,
+      r.enter_time,
+      r.has_comment,
+      r.comment_text,
+      r.comment_count,
+      r.has_follow,
+      r.has_order,
+      r.order_time,
+      r.comment_type,
+    ]),
+  ]
+  const sheet1 = XLSX.utils.aoa_to_sheet(sheet1Data)
+  sheet1['!cols'] = cols
+  XLSX.utils.book_append_sheet(workbook, sheet1, '用户行为明细-全量')
 
-  XLSX.utils.book_append_sheet(workbook, overviewSheet, '统计概览')
-
-  // Sheet 2: 弹幕列表
-  const danmuHeader = ['用户昵称', '评论内容', '时间']
-  const danmuRows = data.danmuList.map(item => [item.nickName, item.content, item.time])
-  const danmuData = [danmuHeader, ...danmuRows]
-  const danmuSheet = XLSX.utils.aoa_to_sheet(danmuData)
-  danmuSheet['!cols'] = [{ wch: 20 }, { wch: 50 }, { wch: 15 }]
-  XLSX.utils.book_append_sheet(workbook, danmuSheet, '弹幕列表')
-
-  // Sheet 3: 粉丝团变化
-  const fansHeader = ['用户昵称', '时间']
-  const fansRows = data.fansClubChanges.map(item => [item.nickName, item.time])
-  const fansData = [fansHeader, ...fansRows]
-  const fansSheet = XLSX.utils.aoa_to_sheet(fansData)
-  fansSheet['!cols'] = [{ wch: 20 }, { wch: 15 }]
-  XLSX.utils.book_append_sheet(workbook, fansSheet, '粉丝团变化')
-
-  // Sheet 4: 事件时间线
-  const eventsHeader = ['事件类型', '用户昵称', '内容', '时间']
-  const eventsRows = data.events.map(item => [
-    getEventTypeName(item.type),
-    item.nickName,
-    item.content || '',
-    item.time,
+  // Sheet2: 已下单用户
+  const sheet2Rows = allRows.filter(r => r.has_order)
+  const sheet2 = XLSX.utils.aoa_to_sheet([
+    header,
+    ...sheet2Rows.map(r => [
+      r.user_id,
+      r.enter_time,
+      r.has_comment,
+      r.comment_text,
+      r.comment_count,
+      r.has_follow,
+      r.has_order,
+      r.order_time,
+      r.comment_type,
+    ]),
   ])
-  const eventsData = [eventsHeader, ...eventsRows]
-  const eventsSheet = XLSX.utils.aoa_to_sheet(eventsData)
-  eventsSheet['!cols'] = [{ wch: 15 }, { wch: 20 }, { wch: 40 }, { wch: 15 }]
-  XLSX.utils.book_append_sheet(workbook, eventsSheet, '事件时间线')
+  sheet2['!cols'] = cols
+  XLSX.utils.book_append_sheet(workbook, sheet2, '已下单用户')
 
-  // 写入文件 - 使用 buffer 方式，兼容 Electron 环境
+  // Sheet3: 有评论未下单
+  const sheet3Rows = allRows.filter(r => r.has_comment && !r.has_order)
+  const sheet3 = XLSX.utils.aoa_to_sheet([
+    header,
+    ...sheet3Rows.map(r => [
+      r.user_id,
+      r.enter_time,
+      r.has_comment,
+      r.comment_text,
+      r.comment_count,
+      r.has_follow,
+      r.has_order,
+      r.order_time,
+      r.comment_type,
+    ]),
+  ])
+  sheet3['!cols'] = cols
+  XLSX.utils.book_append_sheet(workbook, sheet3, '有评论未下单')
+
+  // Sheet4: 已关注未下单
+  const sheet4Rows = allRows.filter(r => r.has_follow && !r.has_order)
+  const sheet4 = XLSX.utils.aoa_to_sheet([
+    header,
+    ...sheet4Rows.map(r => [
+      r.user_id,
+      r.enter_time,
+      r.has_comment,
+      r.comment_text,
+      r.comment_count,
+      r.has_follow,
+      r.has_order,
+      r.order_time,
+      r.comment_type,
+    ]),
+  ])
+  sheet4['!cols'] = cols
+  XLSX.utils.book_append_sheet(workbook, sheet4, '已关注未下单')
+
+  // Sheet5: 高意向未成交（规则版）
+  const sheet5Rows = allRows.filter(r => (r.comment_count >= 1 || r.has_follow) && !r.has_order)
+  const sheet5 = XLSX.utils.aoa_to_sheet([
+    header,
+    ...sheet5Rows.map(r => [
+      r.user_id,
+      r.enter_time,
+      r.has_comment,
+      r.comment_text,
+      r.comment_count,
+      r.has_follow,
+      r.has_order,
+      r.order_time,
+      r.comment_type,
+    ]),
+  ])
+  sheet5['!cols'] = cols
+  XLSX.utils.book_append_sheet(workbook, sheet5, '高意向未成交')
+
+  // Sheet6: 行为构成汇总（仅进入=有进入且无评论/关注/成交；其他为各自维度计数）
+  const onlyEnter = allRows.filter(
+    r => r.enter_time && !r.has_comment && !r.has_follow && !r.has_order,
+  ).length
+  const hasComment = allRows.filter(r => r.has_comment).length
+  const hasFollow = allRows.filter(r => r.has_follow).length
+  const hasOrder = allRows.filter(r => r.has_order).length
+  const sheet6Data = [
+    ['行为类型', '用户数'],
+    ['仅进入', onlyEnter],
+    ['有评论', hasComment],
+    ['有关注', hasFollow],
+    ['有成交', hasOrder],
+  ]
+  const sheet6 = XLSX.utils.aoa_to_sheet(sheet6Data)
+  sheet6['!cols'] = [{ wch: 15 }, { wch: 12 }]
+  XLSX.utils.book_append_sheet(workbook, sheet6, '行为构成汇总')
+
+  // Sheet7: 评论 × 成交
+  const ccOrder = allRows.filter(r => r.has_comment && r.has_order).length
+  const ccNoOrder = allRows.filter(r => r.has_comment && !r.has_order).length
+  const noCOrder = allRows.filter(r => !r.has_comment && r.has_order).length
+  const noCNoOrder = allRows.filter(r => !r.has_comment && !r.has_order).length
+  const sheet7Data = [
+    ['has_comment \\ has_order', '已下单', '未下单'],
+    ['有评论', ccOrder, ccNoOrder],
+    ['无评论', noCOrder, noCNoOrder],
+  ]
+  const sheet7 = XLSX.utils.aoa_to_sheet(sheet7Data)
+  sheet7['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }]
+  XLSX.utils.book_append_sheet(workbook, sheet7, '评论×成交')
+
+  // Sheet8: 关注 × 成交
+  const cfOrder = allRows.filter(r => r.has_follow && r.has_order).length
+  const cfNoOrder = allRows.filter(r => r.has_follow && !r.has_order).length
+  const noFOrder = allRows.filter(r => !r.has_follow && r.has_order).length
+  const noFNoOrder = allRows.filter(r => !r.has_follow && !r.has_order).length
+  const sheet8Data = [
+    ['has_follow \\ has_order', '已下单', '未下单'],
+    ['有关注', cfOrder, cfNoOrder],
+    ['无关注', noFOrder, noFNoOrder],
+  ]
+  const sheet8 = XLSX.utils.aoa_to_sheet(sheet8Data)
+  sheet8['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }]
+  XLSX.utils.book_append_sheet(workbook, sheet8, '关注×成交')
+
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
   fs.writeFileSync(filePath, buffer)
-
   return filePath
 }
 

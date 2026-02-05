@@ -11,9 +11,9 @@ export const SUPPORT_PRODUCT_NAME = 'TASI-live-Supertool'
 
 /**
  * 微信二维码图片路径（对应 public/support-wechat-qr.png）。
- * 请勿删除该文件；若缺失则帮助页「联系微信支持」处无法显示二维码，发布前请确认文件存在。
+ * 使用 BASE_URL 保证开发与打包后均能正确加载（file:// 协议下绝对路径 / 会解析到系统根目录）。
  */
-export const WECHAT_QR_IMAGE_PATH = '/support-wechat-qr.png'
+export const WECHAT_QR_IMAGE_PATH = `${import.meta.env.BASE_URL}support-wechat-qr.png`
 
 export interface FaqItem {
   question: string

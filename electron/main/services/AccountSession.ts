@@ -46,51 +46,57 @@ export class AccountSession {
   }
 
   async connect(config: { headless?: boolean; storageState?: string }) {
-    let storageState: StorageState
-    if (config.storageState) {
-      this.logger.info('检测到已保存登录状态')
-      storageState = JSON.parse(config.storageState)
+    try {
+      let storageState: StorageState
+      if (config.storageState) {
+        this.logger.info('检测到已保存登录状态')
+        storageState = JSON.parse(config.storageState)
+      }
+
+      this.browserSession = await browserManager.createSession(config.headless, storageState)
+      this.streamStateDetector.updateBrowserSession(this.browserSession)
+
+      await this.ensureAuthenticated(this.browserSession, config.headless)
+
+      const state = JSON.stringify(await this.browserSession.context.storageState())
+
+      // 登录成功之后马上先保存一次登录状态，确保后续发生意外后不用重新登录
+      windowManager.send(IPC_CHANNELS.chrome.saveState, this.account.id, state)
+
+      // 此时可以确保正在中控台页面，获取用户名
+      // 获取用户名不应该和连接中控台的行为冲突
+      this.platform
+        .getAccountName(this.browserSession)
+        .then(accountName => {
+          windowManager.send(IPC_CHANNELS.tasks.liveControl.notifyAccountName, {
+            ok: true,
+            accountId: this.account.id,
+            accountName,
+          })
+        })
+        .catch(error => {
+          this.logger.error('获取用户名失败：', error)
+          windowManager.send(IPC_CHANNELS.tasks.liveControl.notifyAccountName, {
+            ok: false,
+          })
+        })
+
+      // 连接成功后，启动直播状态检测轮询
+      this.streamStateDetector.start()
+
+      // 浏览器被外部主动关闭时，程序自动断开所有操作
+      // 不用 browserContext close 或 browser disconnected 的原因：
+      // Windows 手动关闭浏览器时（点击右上角的x或标签页的x）无法触发相应事件
+      // 只会触发 page close，所以没办法
+      this.browserSession.page.on('close', () => {
+        emitter.emit('page-closed', { accountId: this.account.id })
+      })
+      this.logger.success('成功与中控台建立连接')
+    } catch (error) {
+      const message = this.formatConnectError(error)
+      this.logger.error('连接直播控制台失败：', error)
+      throw new Error(message)
     }
-
-    this.browserSession = await browserManager.createSession(config.headless, storageState)
-    this.streamStateDetector.updateBrowserSession(this.browserSession)
-
-    await this.ensureAuthenticated(this.browserSession, config.headless)
-
-    const state = JSON.stringify(await this.browserSession.context.storageState())
-
-    // 登录成功之后马上先保存一次登录状态，确保后续发生意外后不用重新登录
-    windowManager.send(IPC_CHANNELS.chrome.saveState, this.account.id, state)
-
-    // 此时可以确保正在中控台页面，获取用户名
-    // 获取用户名不应该和连接中控台的行为冲突
-    this.platform
-      .getAccountName(this.browserSession)
-      .then(accountName => {
-        windowManager.send(IPC_CHANNELS.tasks.liveControl.notifyAccountName, {
-          ok: true,
-          accountId: this.account.id,
-          accountName,
-        })
-      })
-      .catch(error => {
-        this.logger.error('获取用户名失败：', error)
-        windowManager.send(IPC_CHANNELS.tasks.liveControl.notifyAccountName, {
-          ok: false,
-        })
-      })
-
-    // 连接成功后，启动直播状态检测轮询
-    this.streamStateDetector.start()
-
-    // 浏览器被外部主动关闭时，程序自动断开所有操作
-    // 不用 browserContext close 或 browser disconnected 的原因：
-    // Windows 手动关闭浏览器时（点击右上角的x或标签页的x）无法触发相应事件
-    // 只会触发 page close，所以没办法
-    this.browserSession.page.on('close', () => {
-      emitter.emit('page-closed', { accountId: this.account.id })
-    })
-    this.logger.success('成功与中控台建立连接')
   }
 
   disconnect() {
@@ -136,6 +142,28 @@ export class AccountSession {
       }
       await this.ensureAuthenticated(this.browserSession, headless)
     }
+  }
+
+  private formatConnectError(error: unknown) {
+    const baseMessage =
+      error instanceof Error
+        ? error.message || error.name
+        : typeof error === 'string'
+          ? error
+          : error
+            ? JSON.stringify(error)
+            : '连接直播控制台失败'
+    const details: string[] = []
+    try {
+      if (this.platform?.platformName) {
+        details.push(`platform=${this.platform.platformName}`)
+      }
+      const url = this.browserSession?.page?.url()
+      if (url) details.push(`url=${url}`)
+    } catch {
+      // ignore
+    }
+    return details.length ? `${baseMessage} (${details.join(', ')})` : baseMessage
   }
 
   public async startTask(task: LiveControlTask): Result.ResultAsync<void, Error> {
