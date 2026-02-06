@@ -1,0 +1,35 @@
+---
+description: TypeScript 与 React 组件约定
+globs: **/*.ts,**/*.tsx
+alwaysApply: false
+---
+
+# TypeScript 与 React 约定
+
+## TypeScript
+
+- 使用严格类型，避免 `any`；必要时用 `unknown` 或明确类型
+- 优先 `interface` 定义对象类型，类型与接口放在 `types/` 或文件内按需
+- 错误处理示例：
+
+```typescript
+// ❌ 避免
+try {
+  await fetchData();
+} catch (e) {}
+
+// ✅ 记录并再抛或展示
+try {
+  await fetchData();
+} catch (e) {
+  logger.error('Failed to fetch', { error: e });
+  throw new DataFetchError('Unable to retrieve data', { cause: e });
+}
+```
+
+## React
+
+- 使用函数组件 + Hooks；可复用逻辑抽到 `src/hooks/`
+- 组件文件使用 PascalCase，目录与路由对应 `src/pages/`、`src/components/`
+- 状态尽量局部；跨页面/持久化用 Zustand（见 `src/stores/`）
+- 样式：优先 CSS 变量与现有 `src/styles/`、`design-tokens`，保持与项目主题一致

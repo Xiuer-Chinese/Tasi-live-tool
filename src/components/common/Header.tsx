@@ -1,19 +1,33 @@
 import { Moon, Package, Sun, User } from 'lucide-react'
+import { memo, useCallback } from 'react'
 import { useTheme } from '@/hooks/useTheme'
 import { useAuthStore } from '@/stores/authStore'
 import { AccountSwitcher } from './AccountSwitcher'
 
-export function Header() {
-  const { user, isAuthenticated } = useAuthStore()
+/**
+ * Header 组件 - 已优化
+ * 1. 使用 memo 避免父组件重渲染时不必要的更新
+ * 2. 使用 selector 精确订阅 store 状态，避免订阅整个 store
+ * 3. 使用 useCallback 缓存事件处理函数
+ */
+export const Header = memo(function Header() {
+  // 使用 selector 精确订阅，避免订阅整个 store 导致不必要的重渲染
+  const user = useAuthStore(state => state.user)
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated)
   const [theme, setTheme] = useTheme()
 
-  const handleToggleTheme = () => {
+  // 使用 useCallback 缓存事件处理函数
+  const handleToggleTheme = useCallback(() => {
     setTheme(theme === 'light' ? 'dark' : 'light')
-  }
+  }, [theme, setTheme])
 
-  const handleOpenUserCenter = () => {
+  const handleOpenUserCenter = useCallback(() => {
     window.dispatchEvent(new CustomEvent('auth:user-center'))
-  }
+  }, [])
+
+  const handleLoginClick = useCallback(() => {
+    window.dispatchEvent(new CustomEvent('auth:required', { detail: { feature: 'login' } }))
+  }, [])
 
   return (
     <header
@@ -76,11 +90,7 @@ export function Header() {
         ) : (
           <button
             type="button"
-            onClick={() =>
-              window.dispatchEvent(
-                new CustomEvent('auth:required', { detail: { feature: 'login' } }),
-              )
-            }
+            onClick={handleLoginClick}
             className="flex items-center gap-2 rounded-md px-2.5 py-1.5 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:ring-offset-2 focus:ring-offset-[var(--header-action-bg)]"
             style={{
               backgroundColor: 'var(--primary)',
@@ -102,4 +112,4 @@ export function Header() {
       {/* </div> */}
     </header>
   )
-}
+})

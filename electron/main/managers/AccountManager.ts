@@ -13,11 +13,14 @@ export class AccountManager {
   accountSessions: Map<string, AccountSession> = new Map()
   accountNames: Map<string, string> = new Map()
   private logger = createLogger('账号管理')
+  // 保存事件处理函数引用，用于清理
+  private pageClosedHandler: (payload: { accountId: string }) => void
 
   constructor() {
-    emitter.on('page-closed', ({ accountId }) => {
+    this.pageClosedHandler = ({ accountId }) => {
       this.closeSession(accountId)
-    })
+    }
+    emitter.on('page-closed', this.pageClosedHandler)
   }
 
   createSession(platformName: LiveControlPlatform, account: Account) {
@@ -58,9 +61,14 @@ export class AccountManager {
   }
 
   cleanup() {
+    // 移除事件监听器，避免内存泄漏
+    emitter.off('page-closed', this.pageClosedHandler)
+    // 断开所有会话
     this.accountSessions.values().forEach(session => {
       session.disconnect()
     })
+    this.accountSessions.clear()
+    this.accountNames.clear()
   }
 }
 

@@ -15,7 +15,7 @@ import { useDevMode } from '@/hooks/useDevMode'
 import { Header } from './components/common/Header'
 import { useIpcListener } from './hooks/useIpc'
 import './App.css'
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import type { StreamStatus } from 'shared/streamStatus'
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { UpdateDialog } from './components/update/UpdateDialog'
@@ -281,7 +281,18 @@ function AppContent() {
                 }}
               >
                 <div className="mx-auto w-full max-w-5xl">
-                  <Outlet />
+                  <Suspense
+                    fallback={
+                      <div className="flex items-center justify-center h-64">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                          <span className="text-sm text-muted-foreground">加载中...</span>
+                        </div>
+                      </div>
+                    }
+                  >
+                    <Outlet />
+                  </Suspense>
                 </div>
               </main>
             </div>

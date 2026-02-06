@@ -1,0 +1,24 @@
+---
+description: Electron 主进程与 IPC 约定
+globs: electron/main/**/*.ts,shared/**/*.ts
+alwaysApply: false
+---
+
+# Electron 主进程约定
+
+## 结构
+
+- **主进程**: `electron/main/`（app、窗口、IPC、服务、任务）
+- **预加载**: `electron/preload/`，仅做安全桥接，通过 `contextBridge` 暴露 API
+- **共享类型与通道**: `shared/ipcChannels.ts`、`shared/*.d.ts`，主进程与渲染进程共用
+
+## IPC
+
+- 通道名与类型定义在 `shared/ipcChannels.ts`，新增接口时同步更新
+- 主进程在 `electron/main/ipc/` 中注册 handler，保持一模块一职责
+- 渲染进程通过 `src/hooks/useIpc.ts` 或等价封装调用，不直接依赖 `window.*` 实现细节
+
+## 注意
+
+- 主进程为 Node 环境，可用的 Node API 与 `electron`；渲染进程仅能通过预加载暴露的 API 访问
+- 异步与错误需在 IPC 中妥善返回或通过事件通知，避免未处理的 Promise 拒绝

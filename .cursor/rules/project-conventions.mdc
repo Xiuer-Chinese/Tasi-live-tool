@@ -1,0 +1,29 @@
+---
+description: 项目通用约定与技术栈说明
+alwaysApply: true
+---
+
+# TASI-live-Supertool 项目约定
+
+## 技术栈
+
+- **前端**: React 18 + TypeScript + Vite
+- **桌面**: Electron（主进程在 `electron/main/`，预加载在 `electron/preload/`）
+- **路径别名**: `@/*` → `src/*`，`#/*` → `electron/main/*`，`shared/*` → `./shared/*`
+- **代码质量**: Biome（格式化 + 校验），严格模式 TypeScript
+
+## 代码风格（与 biome.json 一致）
+
+- 单引号字符串，JSX 属性双引号
+- 尾逗号（trailing commas）
+- 分号按需（asNeeded）
+- 箭头函数单参数无括号（asNeeded）
+- 行宽 100，缩进 2 空格
+- 提交前运行 Biome 格式化与校验
+
+## 通用原则
+
+- 新增功能优先考虑 `src/` 与 `electron/main/` 的职责划分：UI/状态在 src，系统/进程/IPC 在 electron
+- IPC 通道定义在 `shared/ipcChannels.ts`，主进程与渲染进程共用
+- 错误处理要记录上下文并向上抛出或展示，避免静默吞掉异常
+- 中文文案用于面向用户的界面与提示；注释与提交信息可用中文或英文，保持统一即可

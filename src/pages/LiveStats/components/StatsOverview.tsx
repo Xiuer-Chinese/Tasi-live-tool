@@ -9,7 +9,7 @@ import {
   UserPlus,
   Users,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { memo, useCallback, useEffect, useRef, useState } from 'react'
 import { GateButton } from '@/components/GateButton'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,7 +27,18 @@ interface StatsCardProps {
   bgColor: string
 }
 
-function StatsCard({ title, value, subValue, icon, color, bgColor }: StatsCardProps) {
+/**
+ * StatsCard 组件 - 已优化
+ * 使用 memo 避免不必要的重渲染
+ */
+const StatsCard = memo(function StatsCard({
+  title,
+  value,
+  subValue,
+  icon,
+  color,
+  bgColor,
+}: StatsCardProps) {
   return (
     <Card className={cn('relative overflow-hidden', bgColor)}>
       <CardContent className="p-4">
@@ -42,7 +53,7 @@ function StatsCard({ title, value, subValue, icon, color, bgColor }: StatsCardPr
       </CardContent>
     </Card>
   )
-}
+})
 
 interface StatsOverviewProps {
   stats: MessageStats
@@ -56,7 +67,13 @@ interface StatsOverviewProps {
   gate: ReturnType<typeof useLiveFeatureGate>
 }
 
-export default function StatsOverview({
+/**
+ * StatsOverview 组件 - 已优化
+ * 1. 使用 memo 避免不必要的重渲染
+ * 2. 修复 useState 存储 ref 的问题，改用 useRef
+ * 3. 使用 useCallback 缓存事件处理函数
+ */
+const StatsOverview = memo(function StatsOverview({
   stats,
   isListening,
   onStart,
@@ -68,7 +85,8 @@ export default function StatsOverview({
   gate,
 }: StatsOverviewProps) {
   const [duration, setDuration] = useState(0)
-  const [startTimeRef] = useState<{ current: number | null }>({ current: null })
+  // 修复：使用 useRef 替代 useState 存储可变引用
+  const startTimeRef = useRef<number | null>(null)
 
   // 计时器
   useEffect(() => {
@@ -87,23 +105,23 @@ export default function StatsOverview({
     // 监听停止时重置
     startTimeRef.current = null
     setDuration(0)
-  }, [isListening, startTimeRef])
+  }, [isListening])
 
-  const handleStart = () => {
+  const handleStart = useCallback(() => {
     startTimeRef.current = Date.now()
     setDuration(0)
     onStart()
-  }
+  }, [onStart])
 
-  const handleStop = () => {
+  const handleStop = useCallback(() => {
     onStop()
-  }
+  }, [onStop])
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     startTimeRef.current = isListening ? Date.now() : null
     setDuration(0)
     onReset()
-  }
+  }, [isListening, onReset])
 
   return (
     <div className="space-y-4">
@@ -256,4 +274,6 @@ export default function StatsOverview({
       </div>
     </div>
   )
-}
+})
+
+export default StatsOverview

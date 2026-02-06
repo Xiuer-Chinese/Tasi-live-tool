@@ -5,7 +5,6 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import electron from 'vite-plugin-electron/simple'
-import pkg from './package.json'
 
 /** 主进程构建完成后复制 runtime（含 load-playwright.cjs），dev 时也会执行，避免主进程 require 报错 */
 function copyMainRuntime() {
@@ -42,6 +41,49 @@ export default defineConfig(({ command }) => {
       sourcemap: isBuild ? false : sourcemap,
       // 生产构建去掉 console/debugger，减少控制台泄露与噪音
       ...(isBuild && { esbuild: { drop: ['console', 'debugger'] } }),
+      // chunk 大小警告限制
+      chunkSizeWarningLimit: 1000,
+      // CSS 压缩
+      cssMinify: true,
+      // Rollup 配置 - chunk 分割策略
+      rollupOptions: {
+        output: {
+          // 手动 chunk 分割，优化缓存策略
+          manualChunks: {
+            // React 核心库单独打包
+            'react-vendor': ['react', 'react-dom', 'react-router'],
+            // Radix UI 组件库单独打包
+            'ui-vendor': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-select',
+              '@radix-ui/react-toast',
+              '@radix-ui/react-tooltip',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-switch',
+              '@radix-ui/react-checkbox',
+              '@radix-ui/react-alert-dialog',
+            ],
+            // Markdown 相关库单独打包（按需加载）
+            'markdown-vendor': [
+              'react-markdown',
+              'marked',
+              'highlight.js',
+              'rehype-highlight',
+              'remark-gfm',
+            ],
+            // 工具库单独打包
+            'utils-vendor': ['lodash-es', 'zustand', 'immer', 'ahooks'],
+            // 动画库单独打包
+            'motion-vendor': ['motion'],
+          },
+        },
+      },
+    },
+    // 优化依赖预构建
+    optimizeDeps: {
+      include: ['react', 'react-dom', 'react-router', 'zustand', 'immer'],
+      exclude: ['playwright', 'better-sqlite3', 'electron-updater'],
     },
     resolve: {
       alias: {

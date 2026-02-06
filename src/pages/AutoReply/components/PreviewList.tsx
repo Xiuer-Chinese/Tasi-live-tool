@@ -1,4 +1,5 @@
 import { SendHorizontalIcon } from 'lucide-react'
+import { memo, useCallback } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -7,25 +8,33 @@ import { Separator } from '@/components/ui/separator'
 import { useAccounts } from '@/hooks/useAccounts'
 import { type MessageOf, useAutoReply } from '@/hooks/useAutoReply'
 
-export default function PreviewList({
+/**
+ * PreviewList 组件 - 已优化
+ * 使用 memo 避免父组件重渲染时不必要的更新
+ */
+const PreviewList = memo(function PreviewList({
   setHighLight,
 }: {
   setHighLight: (commentId: string | null) => void
 }) {
   const { replies, comments } = useAutoReply()
-  const { currentAccountId } = useAccounts()
-  const handleSendReply = async (replyContent: string, _commentId: string) => {
-    try {
-      await window.ipcRenderer.invoke(
-        IPC_CHANNELS.tasks.autoReply.sendReply,
-        currentAccountId,
-        replyContent,
-      )
-      // removeReply(commentId)
-    } catch (error) {
-      console.error('发送回复失败:', error)
-    }
-  }
+  const currentAccountId = useAccounts(state => state.currentAccountId)
+
+  const handleSendReply = useCallback(
+    async (replyContent: string, _commentId: string) => {
+      try {
+        await window.ipcRenderer.invoke(
+          IPC_CHANNELS.tasks.autoReply.sendReply,
+          currentAccountId,
+          replyContent,
+        )
+        // removeReply(commentId)
+      } catch (error) {
+        console.error('发送回复失败:', error)
+      }
+    },
+    [currentAccountId],
+  )
 
   return (
     <Card className="shadow-sm">
@@ -82,4 +91,6 @@ export default function PreviewList({
       </CardContent>
     </Card>
   )
-}
+})
+
+export default PreviewList

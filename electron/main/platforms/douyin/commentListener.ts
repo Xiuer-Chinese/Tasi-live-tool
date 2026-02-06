@@ -1,5 +1,4 @@
 import type { Page, Response } from 'playwright'
-import { sleep } from '#/utils'
 import type { ICommentListener } from '../IPlatform'
 import { SELECTORS, URLS } from './constant'
 
@@ -7,6 +6,7 @@ export class ControlListener implements ICommentListener {
   readonly _isCommentListener = true
 
   private isRunning = false
+  private keepAliveInterval: NodeJS.Timeout | null = null
   private handleComment: (comment: DouyinLiveMessage) => void = () => {}
   constructor(private page: Page) {
     this.handleResponse = this.handleResponse.bind(this)
@@ -14,11 +14,14 @@ export class ControlListener implements ICommentListener {
 
   startCommentListener(onComment: (comment: DouyinLiveMessage) => void) {
     this.handleComment = onComment
+    this.isRunning = true
     this.page.on('response', this.handleResponse)
-    this.keepPageRunning()
+    this.startKeepAlive()
   }
 
   stopCommentListener() {
+    this.isRunning = false
+    this.stopKeepAlive()
     this.page.off('response', this.handleResponse)
   }
 
@@ -39,23 +42,46 @@ export class ControlListener implements ICommentListener {
     }
   }
 
-  private async keepPageRunning() {
-    if (!this.isRunning) return
-    // 检查是否弹出了保护窗口
-    for (const selector of Object.values(SELECTORS.overlays)) {
-      const element = await this.page.$(selector)
-      if (element) {
-        await element.dispatchEvent('click')
-      }
-    }
-    // 有新评论的话点击评论按钮
-    const newCommentButton = await this.page.$(SELECTORS.NEW_COMMENT_LABEL)
-    if (newCommentButton) {
-      await newCommentButton.dispatchEvent('click')
-    }
+  /**
+   * 启动页面保活机制
+   * 优化：使用 setInterval 替代递归调用，避免调用栈累积
+   */
+  private startKeepAlive() {
+    this.stopKeepAlive() // 确保清理旧的定时器
 
-    await sleep(3000)
-    this.keepPageRunning()
+    this.keepAliveInterval = setInterval(async () => {
+      if (!this.isRunning) {
+        this.stopKeepAlive()
+        return
+      }
+
+      try {
+        // 检查是否弹出了保护窗口
+        for (const selector of Object.values(SELECTORS.overlays)) {
+          const element = await this.page.$(selector)
+          if (element) {
+            await element.dispatchEvent('click')
+          }
+        }
+        // 有新评论的话点击评论按钮
+        const newCommentButton = await this.page.$(SELECTORS.NEW_COMMENT_LABEL)
+        if (newCommentButton) {
+          await newCommentButton.dispatchEvent('click')
+        }
+      } catch {
+        // 页面可能已关闭，忽略错误
+      }
+    }, 3000)
+  }
+
+  /**
+   * 停止页面保活机制
+   */
+  private stopKeepAlive() {
+    if (this.keepAliveInterval) {
+      clearInterval(this.keepAliveInterval)
+      this.keepAliveInterval = null
+    }
   }
 
   getCommentListenerPage(): Page {
@@ -227,6 +253,8 @@ export class CompassListener implements ICommentListener {
   stopCommentListener() {
     this.compassPage?.removeAllListeners('response')
     this.compassPage?.close()
+    // 优化：关闭后置空，避免内存泄漏
+    this.compassPage = undefined
   }
 
   getCommentListenerPage(): Page {

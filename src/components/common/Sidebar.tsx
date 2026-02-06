@@ -1,4 +1,5 @@
 import { BarChart3, HelpCircle } from 'lucide-react'
+import { memo, useMemo } from 'react'
 import { NavLink } from 'react-router'
 import { autoReplyPlatforms } from '@/abilities'
 import { useAccounts } from '@/hooks/useAccounts'
@@ -25,72 +26,89 @@ interface SidebarTab {
   platform?: LiveControlPlatform[]
 }
 
-export default function Sidebar() {
+/**
+ * Sidebar 组件 - 已优化
+ * 1. 使用 memo 避免父组件重渲染时不必要的更新
+ * 2. 使用 selector 精确订阅 store 状态
+ * 3. 使用 useMemo 缓存 tabs 数组，避免每次渲染都创建新数组
+ */
+const Sidebar = memo(function Sidebar() {
   const isAutoMessageRunning = useCurrentAutoMessage(context => context.isRunning)
   const isAutoPopupRunning = useCurrentAutoPopUp(context => context.isRunning)
   const { isRunning: isAutoReplyRunning } = useAutoReply()
-  const { currentAccountId } = useAccounts()
-  const liveStatsContexts = useLiveStatsStore(state => state.contexts)
-  const isLiveStatsListening = liveStatsContexts[currentAccountId]?.isListening ?? false
+  const currentAccountId = useAccounts(state => state.currentAccountId)
+  // 优化：使用 selector 只订阅需要的值，而不是整个 contexts 对象
+  const isLiveStatsListening = useLiveStatsStore(
+    state => state.contexts[currentAccountId]?.isListening ?? false,
+  )
   const platform = useCurrentLiveControl(context => context.connectState.platform) as
     | LiveControlPlatform
     | undefined
 
-  const tabs: SidebarTab[] = [
-    {
-      id: '/',
-      name: '打开中控台',
-      icon: <CarbonContentDeliveryNetwork className="w-5 h-5" />,
-    },
-    {
-      id: '/auto-message',
-      name: '自动发言',
-      isRunning: isAutoMessageRunning,
-      icon: <CarbonChat className="w-5 h-5" />,
-    },
-    {
-      id: '/auto-popup',
-      name: '自动弹窗',
-      isRunning: isAutoPopupRunning,
-      icon: <CarbonBlockStorage className="w-5 h-5" />,
-    },
-    {
-      id: '/auto-reply',
-      name: '自动回复',
-      isRunning: isAutoReplyRunning,
-      icon: <CarbonIbmEventAutomation className="w-5 h-5" />,
-      platform: autoReplyPlatforms,
-    },
-    {
-      id: '/live-stats',
-      name: '数据监控',
-      isRunning: isLiveStatsListening,
-      icon: <BarChart3 className="w-5 h-5" />,
-      platform: autoReplyPlatforms,
-    },
-    {
-      id: '/ai-chat',
-      name: 'AI 助手',
-      icon: <CarbonIbmWatsonTextToSpeech className="w-5 h-5" />,
-    },
-    {
-      id: '/settings',
-      name: '应用设置',
-      icon: <CarbonSettings className="w-5 h-5" />,
-    },
-    {
-      id: '/help-support',
-      name: '帮助与支持',
-      icon: <HelpCircle className="w-5 h-5" />,
-    },
-  ]
+  // 使用 useMemo 缓存 tabs 数组，只在依赖变化时重新创建
+  const tabs = useMemo<SidebarTab[]>(
+    () => [
+      {
+        id: '/',
+        name: '打开中控台',
+        icon: <CarbonContentDeliveryNetwork className="w-5 h-5" />,
+      },
+      {
+        id: '/auto-message',
+        name: '自动发言',
+        isRunning: isAutoMessageRunning,
+        icon: <CarbonChat className="w-5 h-5" />,
+      },
+      {
+        id: '/auto-popup',
+        name: '自动弹窗',
+        isRunning: isAutoPopupRunning,
+        icon: <CarbonBlockStorage className="w-5 h-5" />,
+      },
+      {
+        id: '/auto-reply',
+        name: '自动回复',
+        isRunning: isAutoReplyRunning,
+        icon: <CarbonIbmEventAutomation className="w-5 h-5" />,
+        platform: autoReplyPlatforms,
+      },
+      {
+        id: '/live-stats',
+        name: '数据监控',
+        isRunning: isLiveStatsListening,
+        icon: <BarChart3 className="w-5 h-5" />,
+        platform: autoReplyPlatforms,
+      },
+      {
+        id: '/ai-chat',
+        name: 'AI 助手',
+        icon: <CarbonIbmWatsonTextToSpeech className="w-5 h-5" />,
+      },
+      {
+        id: '/settings',
+        name: '应用设置',
+        icon: <CarbonSettings className="w-5 h-5" />,
+      },
+      {
+        id: '/help-support',
+        name: '帮助与支持',
+        icon: <HelpCircle className="w-5 h-5" />,
+      },
+    ],
+    [isAutoMessageRunning, isAutoPopupRunning, isAutoReplyRunning, isLiveStatsListening],
+  )
 
-  const filteredTabs = tabs.filter(tab => {
-    if (tab.platform) {
-      return platform != null && tab.platform.includes(platform)
-    }
-    return true
-  })
+  // 使用 useMemo 缓存过滤后的 tabs
+  const filteredTabs = useMemo(
+    () =>
+      tabs.filter(tab => {
+        if (tab.platform) {
+          return platform != null && tab.platform.includes(platform)
+        }
+        return true
+      }),
+    [tabs, platform],
+  )
 
   return (
     <aside
@@ -133,4 +151,6 @@ export default function Sidebar() {
       </div>
     </aside>
   )
-}
+})
+
+export default Sidebar
