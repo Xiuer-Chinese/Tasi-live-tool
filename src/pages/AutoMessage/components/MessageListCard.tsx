@@ -9,30 +9,19 @@ const MessageListCard = React.memo(() => {
   const { setMessages } = useAutoMessageActions()
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>消息列表</Label>
-              <p className="text-sm text-muted-foreground">
-                添加需要自动发送的消息内容（一行一条）
-              </p>
-            </div>
+    <Card className="flex flex-col flex-1 min-h-0 overflow-hidden">
+      <CardContent className="flex flex-col flex-1 min-h-0 p-3 pt-3">
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="shrink-0 space-y-0.5 mb-2">
+            <Label className="text-sm">消息列表</Label>
+            <p className="text-xs text-muted-foreground">添加需要自动发送的消息内容（一行一条）</p>
           </div>
-
-          <div className="space-y-4">
-            <div>
-              <p className="text-xs text-muted-foreground">
-                提示：可以使用变量 <span className="bg-gray-100 font-bold">{'{候选A/候选B}'}</span>
-                ，发送时将自动从候选项中随机选择一个替换
-              </p>
-              <p className="text-xs text-muted-foreground">
-                如：{'欢迎'}
-                <span className="bg-gray-100 font-bold">{'{宝宝/家人/老铁}'}</span>
-                {'进入直播间 -> 欢迎家人进入直播间'}
-              </p>
-            </div>
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <p className="text-xs text-muted-foreground mb-1">
+              提示：可使用变量 <span className="bg-muted font-medium">{'{候选A/候选B}'}</span>
+              ，如：欢迎<span className="bg-muted font-medium">{'{宝宝/家人/老铁}'}</span>
+              进入直播间
+            </p>
             <MessageEditor messages={messages} onChange={messages => setMessages(messages)} />
           </div>
         </div>

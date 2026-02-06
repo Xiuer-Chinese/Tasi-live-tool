@@ -59,20 +59,18 @@ const CommonList = () => {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <Label>商品列表</Label>
-          <p className="text-sm text-muted-foreground">添加需要自动弹出的商品序号</p>
+      <div className="flex items-center justify-between gap-2 shrink-0">
+        <div className="space-y-0.5 min-w-0">
+          <Label className="text-sm">商品列表</Label>
+          <p className="text-xs text-muted-foreground">添加需要自动弹出的商品序号</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={addGoodsId}>
-            <PlusIcon className="mr-2 h-4 w-4" />
-            添加商品
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" className="h-8 text-xs shrink-0" onClick={addGoodsId}>
+          <PlusIcon className="mr-1.5 h-3.5 w-3.5" />
+          添加
+        </Button>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {goodsIds.map((id, index) => (
           <GoodsListItem
             // biome-ignore lint/suspicious/noArrayIndexKey: 下标不影响
@@ -94,19 +92,23 @@ const CommonList = () => {
 // 商品列表卡片组件
 const GoodsListCard = React.memo(() => {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <Tabs defaultValue="goods-list" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="goods-list">商品列表</TabsTrigger>
-            <TabsTrigger value="shortcuts">快捷键配置</TabsTrigger>
+    <Card className="flex flex-col min-h-0 overflow-hidden">
+      <CardContent className="flex flex-col min-h-0 p-3 pt-3">
+        <Tabs defaultValue="goods-list" className="w-full flex flex-col min-h-0">
+          <TabsList className="grid w-full grid-cols-2 h-8 text-sm shrink-0">
+            <TabsTrigger value="goods-list" className="text-xs sm:text-sm">
+              商品列表
+            </TabsTrigger>
+            <TabsTrigger value="shortcuts" className="text-xs sm:text-sm">
+              快捷键配置
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="goods-list" className="space-y-6 mt-4">
+          <TabsContent value="goods-list" className="space-y-2 mt-2 flex-1 min-h-0 overflow-y-auto">
             <CommonList />
           </TabsContent>
 
-          <TabsContent value="shortcuts" className="mt-4">
+          <TabsContent value="shortcuts" className="mt-2 flex-1 min-h-0 overflow-y-auto">
             <ShortcutConfigTab />
           </TabsContent>
         </Tabs>

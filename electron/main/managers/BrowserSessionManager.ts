@@ -67,10 +67,30 @@ class BrowserSessionManager {
     const execPath = await this.getChromePathOrDefault()
     logger.info(`Launching browser: headless=${headless}, execPath=${execPath}`)
 
+    // 无头模式下使用减内存启动参数，降低多账号并存时的内存占用
+    const args = headless
+      ? [
+          '--disable-gpu',
+          '--disable-dev-shm-usage',
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-extensions',
+          '--disable-background-networking',
+          '--disable-default-apps',
+          '--disable-sync',
+          '--disable-translate',
+          '--metrics-recording-only',
+          '--no-first-run',
+          '--mute-audio',
+          '--hide-scrollbars',
+        ]
+      : []
+
     try {
       const browser = await chromium.launch({
         headless,
         executablePath: execPath,
+        args,
       })
       logger.info('Browser launched successfully')
       return browser

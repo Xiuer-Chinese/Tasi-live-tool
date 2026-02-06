@@ -31,22 +31,22 @@ export function MessageOneKey() {
 
   return (
     <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Label>一键刷屏</Label>
-              <p className="text-sm text-muted-foreground">连续发送多条评论</p>
+      <CardContent>
+        <div className="space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="space-y-0.5 min-w-0">
+              <Label className="text-sm">一键刷屏</Label>
+              <p className="text-xs text-muted-foreground">连续发送多条评论</p>
             </div>
-            <div className="flex gap-4 justify-end">
+            <div className="flex gap-2 items-center shrink-0">
               <Input
-                placeholder="刷屏条数"
+                placeholder="条数"
                 type="number"
                 value={batchCount}
                 onChange={e => setBatchCount(+e.target.value)}
-                className="w-24"
+                className="w-16 h-8 text-sm"
               />
-              <GateButton gate={gate} onClick={handleClick} disabled={isRunning}>
+              <GateButton gate={gate} onClick={handleClick} disabled={isRunning} size="sm">
                 {isRunning ? '运行中' : '一键刷屏'}
               </GateButton>
             </div>

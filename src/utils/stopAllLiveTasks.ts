@@ -72,28 +72,14 @@ export async function stopAllLiveTasks(
       )
     }
 
-    // 2. 停止自动发言任务（使用 TaskManager）
-    // 注意：autoSpeak 现在由 TaskManager 管理，但为了兼容性，这里也调用 IPC
+    // 2. 停止自动发言任务（仅按账号停 IPC，避免 TaskManager 全局单任务误停其他账号）
     const autoMessageStore = useAutoMessageStore.getState()
     const autoMessageContext = autoMessageStore.contexts[accountId]
     if (autoMessageContext?.isRunning) {
       console.log(`[TaskGate] Stopping auto message task for account ${accountId}`)
       try {
-        // 先通过 TaskManager 停止（如果已注册）
-        try {
-          const { taskManager } = await import('@/tasks')
-          // TaskStopReason 是 StopReason 的子集，可以安全转换
-          await taskManager.stop(
-            'autoSpeak',
-            reason as 'manual' | 'disconnected' | 'stream_ended' | 'auth_lost',
-            false,
-          )
-          console.log('[TaskGate] AutoSpeak stopped via TaskManager')
-        } catch (taskManagerError) {
-          // TaskManager 可能未注册或失败，fallback 到 IPC
-          console.log('[TaskGate] TaskManager stop failed, using IPC fallback:', taskManagerError)
-          await window.ipcRenderer.invoke(IPC_CHANNELS.tasks.autoMessage.stop, accountId)
-        }
+        await window.ipcRenderer.invoke(IPC_CHANNELS.tasks.autoMessage.stop, accountId)
+        // 后端会发送 stoppedEvent(accountId)，AutoSpeakTask 的 handleStopped 会同步 TaskManager 状态
       } catch (error) {
         console.error('[TaskGate] Failed to stop auto message task:', error)
       }

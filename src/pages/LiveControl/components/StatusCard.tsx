@@ -1,12 +1,11 @@
 import { useMemoizedFn } from 'ahooks'
-import { CheckIcon, CircleAlert, GlobeIcon, Loader2, XIcon } from 'lucide-react'
+import { CheckIcon, CircleAlert, CircleDot, GlobeIcon, Loader2, XIcon } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { useAccounts } from '@/hooks/useAccounts'
 import { useCurrentChromeConfig, useCurrentChromeConfigActions } from '@/hooks/useChromeConfig'
@@ -65,30 +64,94 @@ const StatusAlert = React.memo(() => {
 
 const StatusCard = React.memo(() => {
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-4 pr-4">
-        <div className="min-w-0 space-y-1.5">
-          <CardTitle>控制台状态</CardTitle>
+    <Card className="flex flex-1 flex-col min-h-0">
+      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="min-w-0 space-y-1">
+          <CardTitle className="text-base">控制台状态</CardTitle>
           <CardDescription>查看并管理直播控制台的连接状态</CardDescription>
         </div>
-        <div className="flex shrink-0 items-center gap-3">
+        <div className="flex shrink-0 items-center gap-3 flex-wrap">
           <PlatformSelect />
-          <ConnectToLiveControl />
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <ConnectState />
-          <StatusAlert />
-          <Separator />
+          <ConnectToLiveControl prominent />
           <HeadlessSetting />
         </div>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col gap-4 pt-0 min-h-0">
+        <ConnectState />
+        <StatusAlert />
       </CardContent>
     </Card>
   )
 })
 
-const ConnectToLiveControl = React.memo(() => {
+/** 紧凑深色状态栏：连接状态 + 性能数据，用于单卡片布局底部 */
+export const CompactStatusBar = React.memo(() => {
+  const connectState = useCurrentLiveControl(context => context.connectState)
+  const accountName = useCurrentLiveControl(context => context.accountName)
+  const statusText =
+    connectState.status === 'connected'
+      ? `已连接${accountName ? ` (${accountName})` : ''}`
+      : connectState.status === 'connecting'
+        ? '连接中'
+        : connectState.status === 'error'
+          ? '连接失败'
+          : '未连接'
+  const isConnected = connectState.status === 'connected'
+  const indicator =
+    connectState.status === 'connected' ? (
+      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shrink-0" aria-hidden />
+    ) : connectState.status === 'connecting' ? (
+      <Loader2 className="h-3.5 w-3.5 text-amber-400 shrink-0 animate-spin" aria-hidden />
+    ) : connectState.status === 'error' ? (
+      <span className="h-1.5 w-1.5 rounded-full bg-red-400 shrink-0" aria-hidden />
+    ) : (
+      <span className="h-1.5 w-1.5 rounded-full bg-slate-500 shrink-0" aria-hidden />
+    )
+
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-b-xl bg-slate-800 px-4 py-2.5 text-slate-200">
+      <div className="flex items-center gap-2 min-w-0">
+        {indicator}
+        <span className="text-xs font-medium truncate">{statusText}</span>
+      </div>
+      <div className="flex items-center gap-4 shrink-0 text-xs tabular-nums">
+        <span className="text-slate-400">CPU</span>
+        <span>{isConnected ? '-- %' : '--'}</span>
+        <span className="text-slate-400">内存</span>
+        <span>{isConnected ? '-- MB' : '--'}</span>
+        <span className="text-slate-400">流速</span>
+        <span>{isConnected ? '-- kbps' : '--'}</span>
+      </div>
+    </div>
+  )
+})
+
+export { ConnectToLiveControl, HeadlessSetting, StatusAlert }
+
+/** 占位：CPU/内存/流速等，增强控制台专业感（当前未在 StatusCard 中展示） */
+const _StatusDashboardPlaceholder = React.memo(() => {
+  const connectState = useCurrentLiveControl(context => context.connectState)
+  const isConnected = connectState.status === 'connected'
+  return (
+    <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/30 p-3">
+      <div className="text-center">
+        <div className="text-xs text-muted-foreground">CPU 占用</div>
+        <div className="text-sm font-medium tabular-nums">{isConnected ? '-- %' : '--'}</div>
+      </div>
+      <div className="text-center">
+        <div className="text-xs text-muted-foreground">内存占用</div>
+        <div className="text-sm font-medium tabular-nums">{isConnected ? '-- MB' : '--'}</div>
+      </div>
+      <div className="text-center">
+        <div className="text-xs text-muted-foreground">当前流速</div>
+        <div className="text-sm font-medium tabular-nums">{isConnected ? '-- kbps' : '--'}</div>
+      </div>
+    </div>
+  )
+})
+
+const ConnectToLiveControl = React.memo((props?: { prominent?: boolean }) => {
+  const { prominent } = props ?? {}
   const { setConnectState } = useCurrentLiveControlActions()
   const connectState = useCurrentLiveControl(context => context.connectState)
   const chromePath = useCurrentChromeConfig(context => context.path)
@@ -329,7 +392,14 @@ const ConnectToLiveControl = React.memo(() => {
       onClick={handleButtonClick}
       disabled={connectState.status === 'connecting'}
       variant={connectState.status === 'connected' ? 'destructive' : 'default'}
-      className={connectState.status !== 'connected' ? 'font-medium text-sm' : undefined}
+      size={prominent ? 'lg' : 'default'}
+      className={
+        prominent
+          ? 'min-w-[220px] h-12 text-base font-semibold shadow-md'
+          : connectState.status !== 'connected'
+            ? 'font-medium text-sm'
+            : undefined
+      }
     >
       {getButtonText()}
     </Button>
@@ -379,7 +449,8 @@ const _DisconnectButton = React.memo(({ handleButtonClick }: { handleButtonClick
   )
 })
 
-const ConnectState = React.memo(() => {
+const ConnectState = React.memo((props: { right?: React.ReactNode } = {}) => {
+  const { right } = props
   const connectState = useCurrentLiveControl(context => context.connectState)
   const accountName = useCurrentLiveControl(context => context.accountName)
   const statusText =
@@ -390,58 +461,62 @@ const ConnectState = React.memo(() => {
         : connectState.status === 'error'
           ? '连接失败'
           : '未连接'
-  const badgeVariant =
+  const statusLabel =
     connectState.status === 'connected'
-      ? 'success'
+      ? '运行中'
       : connectState.status === 'connecting'
-        ? 'warning'
+        ? '连接中'
         : connectState.status === 'error'
-          ? 'destructive'
-          : 'secondary'
+          ? '连接失败'
+          : '未连接'
+  const indicator =
+    connectState.status === 'connected' ? (
+      <CircleDot className="h-8 w-8 text-emerald-500 shrink-0" aria-hidden />
+    ) : connectState.status === 'connecting' ? (
+      <Loader2 className="h-8 w-8 text-amber-500 shrink-0 animate-spin" aria-hidden />
+    ) : connectState.status === 'error' ? (
+      <CircleDot className="h-8 w-8 text-red-500 shrink-0" aria-hidden />
+    ) : (
+      <CircleDot className="h-8 w-8 text-muted-foreground/80 shrink-0" aria-hidden />
+    )
 
   return (
-    <div className="flex items-center gap-3">
-      <div
-        className={`h-2 w-2 rounded-full ${
-          connectState.status === 'connected'
-            ? 'bg-emerald-500'
-            : connectState.status === 'connecting'
-              ? 'bg-amber-400'
-              : connectState.status === 'error'
-                ? 'bg-red-500'
-                : 'bg-gray-300'
-        }`}
-      />
-      <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        {statusText}
-      </span>
-      <Badge
-        variant={badgeVariant}
-        className={
-          connectState.status === 'disconnected'
-            ? 'border-border bg-muted text-foreground font-semibold text-xs px-2.5 py-0.5'
-            : 'font-semibold text-xs px-2.5 py-0.5'
-        }
-      >
-        {connectState.status === 'connected'
-          ? '运行中'
-          : connectState.status === 'connecting'
-            ? '连接中'
-            : connectState.status === 'error'
-              ? '连接失败'
-              : '未连接'}
-      </Badge>
+    <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-4">
+      {indicator}
+      <div className="min-w-0 flex-1">
+        <div
+          className="text-xl font-semibold leading-tight"
+          style={{ color: 'var(--text-primary)' }}
+        >
+          {statusText}
+        </div>
+        <Badge
+          variant={
+            connectState.status === 'connected'
+              ? 'success'
+              : connectState.status === 'connecting'
+                ? 'warning'
+                : connectState.status === 'error'
+                  ? 'destructive'
+                  : 'secondary'
+          }
+          className="mt-1.5 font-semibold text-xs px-2.5 py-0.5"
+        >
+          {statusLabel}
+        </Badge>
+      </div>
+      {right != null ? <div className="shrink-0">{right}</div> : null}
     </div>
   )
 })
 
-const HeadlessSetting = () => {
+const HeadlessSetting = React.memo(() => {
   const headless = useCurrentChromeConfig(context => context.headless ?? false)
   const connectState = useCurrentLiveControl(context => context.connectState)
   const { setHeadless } = useCurrentChromeConfigActions()
   return (
-    <div className="flex justify-between items-center">
-      <span className="text-sm text-muted-foreground">无头模式</span>
+    <div className="flex items-center gap-2">
+      <span className="text-xs text-muted-foreground whitespace-nowrap">无头模式</span>
       <Switch
         checked={headless}
         onCheckedChange={setHeadless}
@@ -449,6 +524,6 @@ const HeadlessSetting = () => {
       />
     </div>
   )
-}
+})
 
 export default StatusCard

@@ -33,28 +33,32 @@ export default function AutoMessage() {
   })
 
   return (
-    <div className="container py-8 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="h-full min-h-0 w-full flex flex-col overflow-hidden py-0">
+      <div className="flex shrink-0 items-center justify-between mb-2">
         <Title title="自动发言" description="配置自动发送消息的规则" />
-        <GateButton gate={gate} onClick={handleTaskButtonClick}>
+        <GateButton gate={gate} onClick={handleTaskButtonClick} size="sm">
           {isRunning ? (
             <>
-              <CarbonStopFilledAlt className="mr-2 h-4 w-4" />
+              <CarbonStopFilledAlt className="mr-1.5 h-3.5 w-3.5" />
               停止任务
             </>
           ) : (
             <>
-              <CarbonPlayFilledAlt className="mr-2 h-4 w-4" />
+              <CarbonPlayFilledAlt className="mr-1.5 h-3.5 w-3.5" />
               开始任务
             </>
           )}
         </GateButton>
       </div>
 
-      <div className="grid gap-6">
-        <MessageListCard />
-        <MessageSettingsCard />
-        <MessageOneKey />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 min-w-0">
+        <div className="min-h-0 min-w-0 flex flex-col overflow-y-auto">
+          <MessageListCard />
+        </div>
+        <div className="min-w-0 flex flex-col gap-2 shrink-0 lg:shrink-0">
+          <MessageSettingsCard />
+          <MessageOneKey />
+        </div>
       </div>
     </div>
   )

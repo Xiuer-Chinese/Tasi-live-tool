@@ -57,16 +57,8 @@ function _useGlobalIpcListener() {
       toast.error(reason)
     }
 
-    // 停止所有任务：autoSpeak 使用 TaskManager，autoReply/autoPopup 使用旧逻辑
-    console.log(`[TaskManager] Connection disconnected, stopping all tasks for account ${id}`)
-
-    // 1. 停止 autoSpeak（使用 TaskManager）
-    const { taskManager } = await import('@/tasks')
-    await taskManager.stopAll('disconnected', message => {
-      toast.error(message)
-    })
-
-    // 2. 停止 autoReply 和 autoPopup（使用旧逻辑）
+    // 只停止该账号的任务，避免误停其他账号的 autoSpeak（TaskManager 为全局单任务）
+    console.log(`[TaskGate] Connection disconnected, stopping all tasks for account ${id}`)
     const { stopAllLiveTasks } = await import('@/utils/stopAllLiveTasks')
     await stopAllLiveTasks(id, 'disconnected', false) // 不显示 toast，避免重复
   })
@@ -149,19 +141,11 @@ function _useGlobalIpcListener() {
       setStreamState(accountId, streamState)
       console.log(`[Gate] Stream state updated in store for account ${accountId}: ${streamState}`)
 
-      // 如果从 live 变为非 live，停止所有任务
+      // 如果从 live 变为非 live，只停止该账号的任务，避免误停其他账号的 autoSpeak
       if (prevState === 'live' && streamState !== 'live') {
         console.log(
-          `[TaskManager] Stream ended (${prevState} -> ${streamState}), stopping all tasks for account ${accountId}`,
+          `[TaskGate] Stream ended (${prevState} -> ${streamState}), stopping all tasks for account ${accountId}`,
         )
-
-        // 1. 停止 autoSpeak（使用 TaskManager）
-        const { taskManager } = await import('@/tasks')
-        await taskManager.stopAll('stream_ended', message => {
-          toast.error(message)
-        })
-
-        // 2. 停止 autoReply 和 autoPopup（使用旧逻辑）
         const { stopAllLiveTasks } = await import('@/utils/stopAllLiveTasks')
         await stopAllLiveTasks(accountId, 'stream_ended', false) // 不显示 toast，避免重复
       }
@@ -259,47 +243,54 @@ function AppContent() {
     <>
       <ContextMenu>
         <ContextMenuTrigger disabled={!devMode} className="min-h-screen">
-          <div className="flex flex-col h-screen" style={{ backgroundColor: 'var(--app-bg)' }}>
-            {/* 头部标题 */}
+          <div
+            className="flex flex-col h-screen overflow-hidden"
+            style={{ backgroundColor: 'var(--app-bg)' }}
+          >
+            {/* 头部标题：固定高度；主内容区高度 = 100vh - 头部 - 底部日志，无全局滚动 */}
             <Header />
 
-            {/* 主体内容：Sidebar 与 Content 沟槽（app-bg 露出） */}
-            <div className="flex flex-1 overflow-hidden gap-0">
+            <div className="flex flex-1 min-h-0 overflow-hidden gap-0">
               {/* 侧边栏 */}
               <Sidebar />
 
               <main
-                className="min-h-0 flex-1 overflow-y-auto"
+                className="min-h-0 flex-1 flex flex-col overflow-hidden"
                 style={{
                   backgroundColor: 'var(--content-bg)',
                   borderTopLeftRadius: '16px',
                   boxShadow: 'var(--content-edge-shadow)',
-                  paddingTop: '72px',
-                  paddingBottom: '40px',
-                  paddingLeft: '40px',
-                  paddingRight: '40px',
+                  paddingTop: '24px',
+                  paddingBottom: '24px',
+                  paddingLeft: '24px',
+                  paddingRight: '24px',
                 }}
               >
-                <div className="mx-auto w-full max-w-5xl">
-                  <Suspense
-                    fallback={
-                      <div className="flex items-center justify-center h-64">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
-                          <span className="text-sm text-muted-foreground">加载中...</span>
+                <div className="mx-auto w-full max-w-5xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                  <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                    <Suspense
+                      fallback={
+                        <div className="flex items-center justify-center flex-1 min-h-0">
+                          <div className="flex flex-col items-center gap-3">
+                            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                            <span className="text-sm text-muted-foreground">加载中...</span>
+                          </div>
                         </div>
+                      }
+                    >
+                      {/* 全屏页(如自动回复)用 h-full 填满后内部滚动；其它页内容过长时此层滚动 */}
+                      <div className="h-full min-h-0 overflow-y-auto">
+                        <Outlet />
                       </div>
-                    }
-                  >
-                    <Outlet />
-                  </Suspense>
+                    </Suspense>
+                  </div>
                 </div>
               </main>
             </div>
 
             <div
               className={cn(
-                'transition-all duration-200',
+                'shrink-0 transition-all duration-200',
                 logCollapsed ? 'h-12 shadow-none opacity-50' : 'h-[180px] opacity-100',
               )}
               style={{

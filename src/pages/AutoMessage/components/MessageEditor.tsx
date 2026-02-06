@@ -50,15 +50,15 @@ export default function MessageEditor({
   }
 
   return (
-    <div>
-      <div className="border rounded flex">
-        <div className="bg-gray-100 text-right px-1 py-1 font-mono text-gray-500 select-none">
+    <div className="min-h-[80px]">
+      <div className="border rounded flex min-h-[80px]">
+        <div className="bg-muted text-right px-1 py-0.5 font-mono text-muted-foreground select-none text-xs shrink-0">
           {localMessages.map((msg, i) => (
             <button
               type="button"
               title="置顶"
               key={msg.id}
-              className="h-8 px-1 leading-8 cursor-pointer flex items-center justify-between group"
+              className="h-6 px-1 leading-6 cursor-pointer flex items-center justify-between group"
               onClick={() => handleCheckboxChange(i, !msg.pinTop)}
             >
               {msg.pinTop ? (
@@ -86,9 +86,9 @@ export default function MessageEditor({
           value={text}
           spellCheck={false}
           onChange={handleChange}
-          rows={localMessages.length || 1}
-          className="bg-white flex-1 outline-none resize-none px-2 py-1 text-sm whitespace-pre border-l no-scrollbar"
-          style={{ lineHeight: '2rem' }}
+          rows={Math.max(3, localMessages.length || 1)}
+          className="bg-background flex-1 min-h-0 outline-none resize-none px-2 py-1 text-xs whitespace-pre border-l no-scrollbar"
+          style={{ lineHeight: '1.5rem' }}
         />
       </div>
     </div>

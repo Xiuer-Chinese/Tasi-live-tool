@@ -3,7 +3,6 @@ import { memo, useId, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { type Message, useAutoReply } from '@/hooks/useAutoReply'
@@ -171,35 +170,39 @@ export default function CommentList({
   const userCommentOnlyId = useId()
 
   return (
-    <Card className="shadow-sm">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <CardTitle>评论列表</CardTitle>
-            <CardDescription>实时显示直播间的评论内容</CardDescription>
+    <Card className="shadow-sm flex flex-col flex-1 min-h-0 overflow-hidden">
+      <CardHeader className="pb-2 shrink-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <CardTitle className="text-sm">评论列表</CardTitle>
+            <CardDescription className="text-xs">实时显示直播间的评论内容</CardDescription>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 shrink-0">
             {isListening === 'listening' && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Switch id={userCommentOnlyId} checked={hideHost} onCheckedChange={setHideHost} />
-                <Label htmlFor={userCommentOnlyId}>仅用户评论</Label>
+                <Label htmlFor={userCommentOnlyId} className="text-xs">
+                  仅用户评论
+                </Label>
               </div>
             )}
           </div>
         </div>
-        <div className="mt-3">
-          <Badge variant={statusVariant}>{statusLabel}</Badge>
+        <div className="mt-2">
+          <Badge variant={statusVariant} className="text-xs">
+            {statusLabel}
+          </Badge>
         </div>
       </CardHeader>
-      <Separator />
-      <CardContent className="p-0">
-        <ScrollArea className="h-[400px]">
-          <div className="py-2 space-y-0.5">
+      <Separator className="shrink-0" />
+      <CardContent className="p-0 flex-1 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto py-2">
+          <div className="space-y-0.5 px-2">
             {filteredComments.length === 0 ? (
-              <div className="flex items-center justify-center h-20 text-muted-foreground">
+              <div className="flex items-center justify-center h-16 text-muted-foreground text-sm">
                 {isListening === 'listening'
                   ? '暂无评论数据'
-                  : '请点击右上角"开始任务"按钮开始接收评论'}
+                  : '请点击右上角"开始任务"开始接收评论'}
               </div>
             ) : (
               filteredComments.map(comment => (
@@ -211,7 +214,7 @@ export default function CommentList({
               ))
             )}
           </div>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   )

@@ -98,33 +98,38 @@ export default function AutoReply() {
   })
 
   const connectState = useCurrentLiveControl(context => context.connectState)
-  const platform = connectState.platform as any
+  const platform = connectState.platform as string
   if (!autoReplyPlatforms.includes(platform)) {
     return null
   }
 
   return (
-    <div className="container py-8 space-y-6">
-      <div className="pb-4 border-b">
-        <div className="flex items-center justify-between">
-          <div>
+    <div className="h-full min-h-0 w-full flex flex-col overflow-hidden">
+      <div className="shrink-0 pb-1 mb-2 border-b">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
             <Title title="自动回复" description="查看直播间的实时评论并自动回复" />
           </div>
-          <div className="flex items-center gap-2">
-            {/* 用户屏蔽列表 */}
-            <Button variant="outline" onClick={() => navigate('settings')} title="设置">
-              <Settings2 className="h-4 w-4" />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('settings')}
+              title="设置"
+              className="h-8 text-sm"
+            >
+              <Settings2 className="h-3.5 w-3.5" />
               <span>设置</span>
             </Button>
-            <GateButton gate={gate} onClick={handleAutoReplyToggle}>
+            <GateButton gate={gate} onClick={handleAutoReplyToggle} size="sm">
               {isRunning ? (
                 <>
-                  <CarbonStopFilledAlt className="mr-2 h-4 w-4" />
+                  <CarbonStopFilledAlt className="mr-1.5 h-3.5 w-3.5" />
                   停止任务
                 </>
               ) : (
                 <>
-                  <CarbonPlayFilledAlt className="mr-2 h-4 w-4" />
+                  <CarbonPlayFilledAlt className="mr-1.5 h-3.5 w-3.5" />
                   开始任务
                 </>
               )}
@@ -133,12 +138,8 @@ export default function AutoReply() {
         </div>
       </div>
 
-      {/* 评论和回复区域 */}
-      <div className="grid grid-cols-2 gap-6">
-        {/* 评论列表卡片 */}
+      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0 min-w-0">
         <CommentList highlight={highlightedCommentId} />
-
-        {/* 回复预览卡片 */}
         <PreviewList setHighLight={setHighlightedCommentId} />
       </div>
     </div>

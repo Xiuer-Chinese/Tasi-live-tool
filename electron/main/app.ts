@@ -15,6 +15,7 @@ import {
   shell,
   Tray,
 } from 'electron'
+import { accountManager } from './managers/AccountManager'
 import { updateManager } from './managers/UpdateManager'
 import windowManager from './windowManager'
 import './ipc'
@@ -256,8 +257,13 @@ async function createWindow() {
             ')',
           )
           setTimeout(() => {
-            if (win && !win.isDestroyed() && !win.webContents.isDestroyed()) {
-              win.loadURL(VITE_DEV_SERVER_URL!).catch(err => {
+            if (
+              win &&
+              !win.isDestroyed() &&
+              !win.webContents.isDestroyed() &&
+              VITE_DEV_SERVER_URL
+            ) {
+              win.loadURL(VITE_DEV_SERVER_URL).catch(err => {
                 createLogger('window').error('loadURL retry failed:', err)
               })
             }
@@ -344,6 +350,19 @@ async function createWindow() {
   }
 }
 
+/** 有连接账号时，每 60 秒打点主进程内存，便于观测多账号资源占用 */
+const MEMORY_LOG_INTERVAL_MS = 60_000
+function startMemoryLogInterval() {
+  setInterval(() => {
+    const n = accountManager.accountSessions.size
+    if (n === 0) return
+    const mem = process.memoryUsage()
+    createLogger('资源').info(
+      `[资源] 连接数=${n} heapUsed=${Math.round(mem.heapUsed / 1024 / 1024)}MB rss=${Math.round(mem.rss / 1024 / 1024)}MB`,
+    )
+  }, MEMORY_LOG_INTERVAL_MS)
+}
+
 logWindowDebug('before whenReady')
 app
   .whenReady()
@@ -352,6 +371,7 @@ app
     logWindowDebug('after whenReady')
     createWindow()
     createTray()
+    startMemoryLogInterval()
   })
 
 app.on('window-all-closed', async () => {

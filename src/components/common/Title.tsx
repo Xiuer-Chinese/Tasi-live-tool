@@ -1,13 +1,13 @@
 export function Title({ title, description }: { title: string; description: string }) {
   return (
-    <div>
+    <div className="mb-2">
       <h1
-        className="text-2xl font-semibold tracking-tight"
+        className="text-lg font-semibold tracking-tight leading-tight"
         style={{ color: 'var(--text-primary)' }}
       >
         {title}
       </h1>
-      <p className="mt-1.5 text-sm" style={{ color: 'var(--text-muted)' }}>
+      <p className="mt-0.5 text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>
         {description}
       </p>
     </div>

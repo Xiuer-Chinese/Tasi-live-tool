@@ -25,7 +25,8 @@ const basePlatforms: Record<string, string> = {
 // 正式发行版也包含测试平台，便于用户试用体验
 const platforms = basePlatforms
 
-const PlatformSelect = React.memo(() => {
+const PlatformSelect = React.memo((props: { fullWidth?: boolean } = {}) => {
+  const { fullWidth } = props
   const connectState = useCurrentLiveControl(context => context.connectState)
   const { setPlatform } = useCurrentLiveControlActions()
   const guardAction = useGateStore(s => s.guardAction)
@@ -51,7 +52,13 @@ const PlatformSelect = React.memo(() => {
       onValueChange={handlePlatformChange}
       disabled={connectState.status !== 'disconnected'}
     >
-      <SelectTrigger className="w-[140px] border-border/30 bg-muted/30 text-muted-foreground opacity-60 hover:opacity-80 transition-opacity text-sm">
+      <SelectTrigger
+        className={
+          fullWidth
+            ? 'w-full border-border/30 bg-muted/30 text-muted-foreground text-sm'
+            : 'w-[140px] border-border/30 bg-muted/30 text-muted-foreground opacity-60 hover:opacity-80 transition-opacity text-sm'
+        }
+      >
         <SelectValue placeholder="选择平台" />
       </SelectTrigger>
       <SelectContent>
