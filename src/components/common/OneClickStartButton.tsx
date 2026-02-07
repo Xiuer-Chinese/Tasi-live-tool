@@ -40,12 +40,16 @@ function setSkipConfirm(value: boolean): void {
   }
 }
 
-// 统一按钮尺寸样式
-const BUTTON_HEIGHT = 'h-12'
-const BUTTON_TEXT = 'text-base font-semibold'
-const ICON_BUTTON_SIZE = 'h-12 w-12'
+// 统一按钮尺寸样式 - h-10 与其他按钮保持一致
+const BUTTON_HEIGHT = 'h-10'
+const BUTTON_TEXT = 'text-sm font-medium'
+const ICON_BUTTON_SIZE = 'h-10 w-10'
 
-export function OneClickStartButton() {
+interface OneClickStartButtonProps {
+  variant?: 'default' | 'secondary'
+}
+
+export function OneClickStartButton({ variant = 'default' }: OneClickStartButtonProps) {
   const { state, startAllTasks, stopAllTasks, isAnyTaskRunning } = useOneClickStart()
   const gate = useLiveFeatureGate()
   const [showConfirm, setShowConfirm] = useState(false)
@@ -87,6 +91,11 @@ export function OneClickStartButton() {
     setAutoStartOnLive(checked)
   })
 
+  // 根据 variant 确定按钮样式
+  const isSecondary = variant === 'secondary'
+  const mainButtonVariant = isAnyTaskRunning ? 'destructive' : isSecondary ? 'secondary' : 'default'
+  const settingsButtonVariant = isSecondary ? 'secondary' : 'default'
+
   if (isAnyTaskRunning) {
     return (
       <div className="flex items-center gap-0">
@@ -117,18 +126,19 @@ export function OneClickStartButton() {
           gate={gate}
           onClick={handleClick}
           disabled={state.isLoading}
+          variant={mainButtonVariant}
           className={`gap-2 rounded-r-none ${BUTTON_HEIGHT} ${BUTTON_TEXT}`}
         >
           <Play className="w-4 h-4" />
-          一键开启任务
+          一键开启
         </GateButton>
 
         <Popover open={settingsOpen} onOpenChange={setSettingsOpen}>
           <PopoverTrigger asChild>
             <Button
-              variant="default"
+              variant={settingsButtonVariant}
               size="icon"
-              className={`rounded-l-none border-l border-primary-foreground/20 ${ICON_BUTTON_SIZE}`}
+              className={`rounded-l-none border-l ${isSecondary ? 'border-secondary-foreground/20' : 'border-primary-foreground/20'} ${ICON_BUTTON_SIZE}`}
               disabled={state.isLoading}
             >
               <Settings className="w-4 h-4" />
