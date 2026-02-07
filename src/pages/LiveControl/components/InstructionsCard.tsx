@@ -1,6 +1,6 @@
+import { ChevronRight, HelpCircle } from 'lucide-react'
 import React from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { HelpCircle, ChevronRight } from 'lucide-react'
 
 const instructions = [
   { step: 1, title: '选择平台', desc: '选择平台并连接' },
@@ -31,9 +31,7 @@ const InstructionsCard = React.memo(() => (
                   <div className="text-xs text-muted-foreground">{item.desc}</div>
                 </div>
               </div>
-              {!isLast && (
-                <ChevronRight className="h-5 w-5 text-muted-foreground/50 shrink-0" />
-              )}
+              {!isLast && <ChevronRight className="h-5 w-5 text-muted-foreground/50 shrink-0" />}
             </React.Fragment>
           )
         })}

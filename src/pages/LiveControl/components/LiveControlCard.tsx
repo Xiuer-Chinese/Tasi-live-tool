@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import PlatformSelect from './PlatformSelect'
-import { CompactStatusBar, ConnectToLiveControl, HeadlessSetting, StatusAlert } from './StatusCard'
+import { ConnectToLiveControl, HeadlessSetting, StatusAlert } from './StatusCard'
 
 export const LiveControlCard = React.memo(() => {
   return (
@@ -17,16 +17,13 @@ export const LiveControlCard = React.memo(() => {
         <div className="flex items-center gap-3 flex-wrap">
           <HeadlessSetting />
           <div className="flex-1 min-w-[12.5rem] flex justify-end">
-            <ConnectToLiveControl prominent />
+            <ConnectToLiveControl />
           </div>
         </div>
 
         {/* 平台提示 */}
         <StatusAlert />
       </CardContent>
-
-      {/* 第三行：底部深色状态栏 */}
-      <CompactStatusBar />
     </Card>
   )
 })

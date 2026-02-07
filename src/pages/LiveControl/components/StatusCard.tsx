@@ -1,5 +1,5 @@
 import { useMemoizedFn } from 'ahooks'
-import { Monitor, Play, Square, GlobeIcon, Loader2, CheckIcon, XIcon } from 'lucide-react'
+import { CheckIcon, GlobeIcon, Loader2, Monitor, Play, Square, XIcon } from 'lucide-react'
 import React, { useEffect, useRef } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { OneClickStartButton } from '@/components/common/OneClickStartButton'
@@ -97,7 +97,9 @@ const StatusCard = React.memo(() => {
           <div className="flex items-center justify-between gap-4 flex-wrap">
             {/* 左侧状态显示 */}
             <div className="flex items-center gap-4">
-              <div className={`h-14 w-14 rounded-xl flex items-center justify-center ${isConnected ? 'bg-green-100' : 'bg-primary/10'}`}>
+              <div
+                className={`h-14 w-14 rounded-xl flex items-center justify-center ${isConnected ? 'bg-green-100' : 'bg-primary/10'}`}
+              >
                 {isConnected ? (
                   <div className="h-5 w-5 rounded-full bg-green-500 animate-pulse" />
                 ) : isConnecting ? (
@@ -107,11 +109,11 @@ const StatusCard = React.memo(() => {
                 )}
               </div>
               <div>
-                <div className="text-base font-medium">
-                  {statusText}
-                </div>
+                <div className="text-base font-medium">{statusText}</div>
                 <div className="text-sm text-muted-foreground">
-                  {connectState.platform ? `${getPlatformName(connectState.platform)}` : '请选择平台并连接'}
+                  {connectState.platform
+                    ? `${getPlatformName(connectState.platform)}`
+                    : '请选择平台并连接'}
                 </div>
               </div>
             </div>
@@ -151,10 +153,10 @@ const StatusCard = React.memo(() => {
 // 获取平台显示名称
 const getPlatformName = (platform: string) => {
   const names: Record<string, string> = {
-    'douyin': '抖音',
-    'taobao': '淘宝',
-    'wxchannel': '视频号',
-    'test': '测试平台',
+    douyin: '抖音',
+    taobao: '淘宝',
+    wxchannel: '视频号',
+    test: '测试平台',
   }
   return names[platform] || platform
 }
@@ -377,11 +379,7 @@ const ConnectToLiveControl = React.memo(() => {
       variant={isConnected ? 'destructive' : 'default'}
       className="h-10 px-4 text-sm font-medium"
     >
-      {isConnected ? (
-        <Square className="mr-1.5 h-4 w-4" />
-      ) : (
-        <Play className="mr-1.5 h-4 w-4" />
-      )}
+      {isConnected ? <Square className="mr-1.5 h-4 w-4" /> : <Play className="mr-1.5 h-4 w-4" />}
       {getButtonText()}
     </Button>
   )
