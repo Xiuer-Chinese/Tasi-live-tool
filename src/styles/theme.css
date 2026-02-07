@@ -33,9 +33,33 @@
   --header-action-bg: hsl(220, 14%, 97%);
   --header-action-border: rgba(0, 0, 0, 0.06);
   --header-action-fg: hsl(220, 18%, 12%);
+
+  /* shadcn/ui 兼容变量 - 日间模式 */
+  --background: 0 0% 100%;
   --foreground: 220 18% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 220 18% 12%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 18% 12%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 14% 96%;
+  --secondary-foreground: 220 18% 12%;
+  --muted: 220 14% 96%;
   --muted-foreground: 220 10% 42%;
+  --accent: 220 14% 96%;
+  --accent-foreground: 220 18% 12%;
+  --destructive: 0 78% 56%;
+  --destructive-foreground: 0 0% 98%;
+  --input: 0 0% 100%;
   --ring: 22 75% 50%;
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 220 18% 12%;
+  --sidebar-primary: 22 75% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 220 14% 96%;
+  --sidebar-accent-foreground: 220 18% 12%;
+  --sidebar-border: 220 13% 91%;
+  --sidebar-ring: 22 75% 50%;
 }
 
 /* ========== 夜间主题 ========== */
@@ -67,6 +91,7 @@
   --header-action-fg: hsl(0, 0%, 95%);
   --header-action-select-chevron-opacity: 0.9;
 
+  /* shadcn/ui 兼容变量 - 夜间模式 */
   --background: 0 0% 11%;
   --foreground: 0 0% 98%;
   --card: 0 0% 15%;
@@ -82,7 +107,7 @@
   --accent-foreground: 0 0% 98%;
   --destructive: 0 62.8% 30.6%;
   --destructive-foreground: 0 0% 98%;
-  --input: 0 0% 20%;
+  --input: 0 0% 15%;
   --ring: 24 60% 55%;
   --sidebar-background: 0 0% 9%;
   --sidebar-foreground: 0 0% 98%;
