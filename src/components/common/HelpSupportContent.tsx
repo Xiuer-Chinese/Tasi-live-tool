@@ -1,7 +1,15 @@
-import { BookOpen, ChevronDown, Copy, MessageCircle } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronDown,
+  Copy,
+  GraduationCap,
+  HelpCircle,
+  Mail,
+  MessageCircle,
+} from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   HELP_FAQ_ITEMS,
@@ -12,11 +20,6 @@ import {
 import { useToast } from '@/hooks/useToast'
 import { cn } from '@/lib/utils'
 import { UserGuideDialog } from './UserGuideDialog'
-
-const INTRO_TEXT = `如果你在使用过程中遇到问题，建议先查看使用教程或下方的常见问题。
-如果问题仍未解决，可通过下方方式联系支持。`
-
-const CONTACT_TIP = '添加微信时，请备注【软件名 + 问题简述】，以便更快处理。'
 
 export function HelpSupportContent() {
   const { toast } = useToast()
@@ -33,113 +36,164 @@ export function HelpSupportContent() {
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
-      {/* 左栏：简介 + 使用教程 + 联系支持 */}
-      <div className="min-w-0 space-y-3">
-        <p className="text-sm text-muted-foreground whitespace-pre-line leading-snug">
-          {INTRO_TEXT}
-        </p>
-
-        <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20 p-3">
-          <CardHeader className="p-0 pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <BookOpen className="h-4 w-4 text-primary" />
-              使用教程
-            </CardTitle>
-            <CardDescription className="text-xs mt-0.5">
-              详细了解各功能模块的使用方法，快速上手直播工具
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-0">
-            <UserGuideDialog
-              trigger={
-                <Button size="sm" className="gap-1.5 h-8">
-                  <BookOpen className="h-3.5 w-3.5" />
-                  查看完整教程
-                </Button>
-              }
-            />
-          </CardContent>
-        </Card>
-
-        {/* 联系支持：紧凑排版，避免滚屏 */}
-        <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
-          <h3 className="text-sm font-medium leading-tight">联系支持</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">{SUPPORT_EMAIL}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1 h-7 text-xs"
-              onClick={handleCopyEmail}
-            >
-              <Copy className="h-3 w-3" />
-              一键复制邮箱
-            </Button>
+    <div className="flex flex-col gap-6 min-w-0">
+      {/* 使用教程卡片 */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <GraduationCap className="h-4 w-4 text-primary" />
+            使用教程
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <BookOpen className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium mb-1">快速上手直播工具</div>
+              <p className="text-sm text-muted-foreground mb-4">
+                详细了解各功能模块的使用方法，包括直播控制台连接、自动发言、自动弹窗、自动回复等功能的使用步骤。
+              </p>
+              <UserGuideDialog
+                trigger={
+                  <Button size="sm" className="h-9">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    查看完整教程
+                  </Button>
+                }
+              />
+            </div>
           </div>
-          <Collapsible open={wechatOpen} onOpenChange={setWechatOpen}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 h-7 text-xs">
-                <MessageCircle className="h-3 w-3" />
-                联系微信支持
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <div className="mt-2 p-2 border rounded-md bg-muted/30 inline-block">
-                <img
-                  src={WECHAT_QR_IMAGE_PATH}
-                  alt="微信支持二维码"
-                  className="w-40 h-40 object-contain"
-                  onError={e => {
-                    const target = e.currentTarget
-                    target.style.display = 'none'
-                    const fallback = target.nextElementSibling as HTMLElement | null
-                    if (fallback) fallback.hidden = false
-                  }}
-                />
-                <p
-                  className="w-40 h-40 flex items-center justify-center text-xs text-muted-foreground text-center"
-                  hidden
-                >
-                  二维码图片未找到，请确保 public/support-wechat-qr.png 存在
-                </p>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-          <p className="text-xs text-muted-foreground leading-snug">
-            {CONTACT_TIP.replace('软件名', SUPPORT_PRODUCT_NAME)}
-          </p>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* 右栏：常见问题 */}
-      <div className="min-w-0 space-y-2">
-        <h3 className="text-sm font-medium">常见问题</h3>
-        <ul className="space-y-0.5">
-          {HELP_FAQ_ITEMS.map((item, index) => {
-            const id = `faq-${index}`
-            const isOpen = openFaqId === id
-            return (
-              <li key={id}>
-                <Collapsible open={isOpen} onOpenChange={open => setOpenFaqId(open ? id : null)}>
-                  <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-sm font-medium hover:bg-muted/80 transition-colors">
-                    <ChevronDown
-                      className={cn(
-                        'h-3.5 w-3.5 shrink-0 transition-transform',
-                        isOpen && 'rotate-180',
-                      )}
+      {/* 联系支持卡片 */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageCircle className="h-4 w-4 text-primary" />
+            联系支持
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6 space-y-6">
+          {/* 邮箱支持 */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <div className="h-4 w-1 rounded-full bg-primary" />
+              邮箱支持
+            </div>
+            <div className="pl-3">
+              <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Mail className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">发送邮件</div>
+                    <div className="text-xs text-muted-foreground">{SUPPORT_EMAIL}</div>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" className="h-9 px-4" onClick={handleCopyEmail}>
+                  <Copy className="mr-2 h-4 w-4" />
+                  复制邮箱
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* 分隔线 */}
+          <div className="h-px bg-border" />
+
+          {/* 微信支持 */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <div className="h-4 w-1 rounded-full bg-primary" />
+              微信支持
+            </div>
+            <div className="pl-3">
+              <Collapsible open={wechatOpen} onOpenChange={setWechatOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-9 mb-3">
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    {wechatOpen ? '收起二维码' : '查看微信二维码'}
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="p-4 border rounded-lg bg-muted/30 inline-block">
+                    <img
+                      src={WECHAT_QR_IMAGE_PATH}
+                      alt="微信支持二维码"
+                      className="w-44 h-44 object-contain rounded-md"
+                      onError={e => {
+                        const target = e.currentTarget
+                        target.style.display = 'none'
+                        const fallback = target.nextElementSibling as HTMLElement | null
+                        if (fallback) fallback.hidden = false
+                      }}
                     />
-                    <span>{item.question}</span>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <p className="pl-5 pr-2 py-1 text-xs text-muted-foreground">{item.answer}</p>
-                  </CollapsibleContent>
+                    <p
+                      className="w-44 h-44 flex items-center justify-center text-xs text-muted-foreground text-center"
+                      hidden
+                    >
+                      二维码图片未找到
+                      <br />
+                      请确保 public/support-wechat-qr.png 存在
+                    </p>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
+              <p className="text-xs text-muted-foreground">
+                添加微信时，请备注【{SUPPORT_PRODUCT_NAME} + 问题简述】，以便更快处理。
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 常见问题卡片 */}
+      <Card className="overflow-hidden">
+        <CardHeader className="bg-muted/50 px-6 py-4">
+          <CardTitle className="text-base flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-primary" />
+            常见问题
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="space-y-2">
+            {HELP_FAQ_ITEMS.map((item, index) => {
+              const id = `faq-${index}`
+              const isOpen = openFaqId === id
+              return (
+                <Collapsible
+                  key={id}
+                  open={isOpen}
+                  onOpenChange={open => setOpenFaqId(open ? id : null)}
+                >
+                  <div className="border rounded-lg overflow-hidden">
+                    <CollapsibleTrigger className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/50 transition-colors">
+                      <ChevronDown
+                        className={cn(
+                          'h-4 w-4 shrink-0 text-muted-foreground transition-transform',
+                          isOpen && 'rotate-180',
+                        )}
+                      />
+                      <span className="text-sm font-medium">{item.question}</span>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="px-4 pb-3 pl-11">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {item.answer}
+                        </p>
+                      </div>
+                    </CollapsibleContent>
+                  </div>
                 </Collapsible>
-              </li>
-            )
-          })}
-        </ul>
-      </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

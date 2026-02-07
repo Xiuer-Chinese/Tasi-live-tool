@@ -160,7 +160,7 @@ const MessageList = React.memo(
     status: string
     onRetry: (messages: { role: string; content: string }[]) => Promise<void>
   }) => (
-    <div className="space-y-6 min-h-[100px]">
+    <div className="space-y-6 min-h-[6.25rem]">
       {messages.map(message => (
         <Message key={message.id} {...message} onRetry={onRetry} />
       ))}

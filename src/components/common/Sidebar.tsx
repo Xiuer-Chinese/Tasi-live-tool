@@ -112,7 +112,7 @@ const Sidebar = memo(function Sidebar() {
 
   return (
     <aside
-      className="w-56 min-w-[224px] relative z-[1]"
+      className="w-56 min-w-[14rem] relative z-[1]"
       style={{
         backgroundColor: 'var(--sidebar-bg)',
         boxShadow: 'var(--sidebar-edge-shadow)',

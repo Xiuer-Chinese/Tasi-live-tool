@@ -99,7 +99,7 @@ export function UserCenter({ isOpen, onClose }: UserCenterProps) {
       aria-labelledby="user-center-title"
     >
       <div
-        className="w-[480px] max-w-[92vw] max-h-[70vh] bg-white rounded-xl border border-[hsl(var(--border))] overflow-hidden flex flex-col"
+        className="w-[30rem] max-w-[92vw] max-h-[70vh] bg-white rounded-xl border border-[hsl(var(--border))] overflow-hidden flex flex-col"
         style={{ boxShadow: 'var(--shadow-card)' }}
         onClick={e => e.stopPropagation()}
         onKeyDown={e => {

@@ -1,4 +1,4 @@
-import { FileTextIcon, RefreshCw } from 'lucide-react'
+import { Bell, Bug, FileTextIcon, Info, RefreshCw, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { Button } from '@/components/ui/button'
@@ -55,56 +55,96 @@ export function GeneralAboutCard() {
   const handleOpenLogFolder = () => window.ipcRenderer.invoke(IPC_CHANNELS.app.openLogFolder)
 
   return (
-    <Card id="update-section" className="p-4 pt-3">
-      <CardHeader className="p-0 pb-2">
-        <CardTitle className="text-sm">常规与关于</CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-muted/50 px-6 py-4">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Info className="h-4 w-4 text-primary" />
+          常规与关于
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1 p-0 pt-0">
-        {/* 通用选项：两两并排 */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0">
-          <SettingRow label="最小化到托盘提示" description="关闭窗口时提醒">
-            <Switch checked={hideToTrayTipEnabled} onCheckedChange={handleToggleHideToTrayTip} />
-          </SettingRow>
-          <SettingRow label="有新版本时弹窗提示" description="弹窗显示更新内容">
-            <Switch checked={enableAutoCheckUpdate} onCheckedChange={setEnableAutoCheckUpdate} />
-          </SettingRow>
-        </div>
-
-        {/* 软件更新：版本 + 检查更新同一行 */}
-        <div className="flex items-center justify-between gap-3 py-2">
-          <div className="min-w-0">
-            <div className="text-sm font-medium leading-tight">软件更新</div>
-            <div className="text-xs text-muted-foreground mt-0.5">当前版本 {version}</div>
+      <CardContent className="p-6 space-y-6">
+        {/* 通知设置分组 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="h-4 w-1 rounded-full bg-primary" />
+            通知设置
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 shrink-0"
-            disabled={updateStatus === 'checking'}
-            onClick={checkUpdate}
-          >
-            {updateStatus === 'checking' ? (
-              <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <>
-                <RefreshCw className="mr-1 h-3.5 w-3.5" />
-                {isUpToDate ? '已是最新' : '检查更新'}
-              </>
-            )}
-          </Button>
+
+          <div className="pl-3 space-y-3">
+            <SettingRow label="最小化到托盘提示" description="关闭窗口时显示系统通知提醒">
+              <Switch checked={hideToTrayTipEnabled} onCheckedChange={handleToggleHideToTrayTip} />
+            </SettingRow>
+
+            <SettingRow label="新版本提醒" description="有新版本时弹窗显示更新内容">
+              <Switch checked={enableAutoCheckUpdate} onCheckedChange={setEnableAutoCheckUpdate} />
+            </SettingRow>
+          </div>
         </div>
 
-        {/* 关于/支持：日志、官网、技术支持 */}
-        <SettingRow label="运行日志" description="main.log">
-          <Button variant="outline" size="sm" className="h-8" onClick={handleOpenLogFolder}>
-            <FileTextIcon className="mr-1 h-3.5 w-3.5" />
-            打开
-          </Button>
-        </SettingRow>
+        {/* 分隔线 */}
+        <div className="h-px bg-border" />
 
-        <SettingRow label="开发者模式" description="右键打开开发者工具">
-          <Switch checked={devMode} onCheckedChange={handleToggleDevMode} />
-        </SettingRow>
+        {/* 软件更新分组 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="h-4 w-1 rounded-full bg-primary" />
+            软件更新
+          </div>
+
+          <div className="pl-3">
+            <div className="flex items-center justify-between gap-4 p-4 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <div className="text-sm font-medium">当前版本</div>
+                  <div className="text-xs text-muted-foreground">v{version}</div>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 px-4"
+                disabled={updateStatus === 'checking'}
+                onClick={checkUpdate}
+              >
+                {updateStatus === 'checking' ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4" />
+                    {isUpToDate ? '已是最新' : '检查更新'}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* 分隔线 */}
+        <div className="h-px bg-border" />
+
+        {/* 开发者工具分组 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="h-4 w-1 rounded-full bg-primary" />
+            开发者工具
+          </div>
+
+          <div className="pl-3 space-y-3">
+            <SettingRow label="运行日志" description="查看程序运行日志文件 main.log">
+              <Button variant="outline" size="sm" className="h-9" onClick={handleOpenLogFolder}>
+                <FileTextIcon className="mr-2 h-4 w-4" />
+                打开日志
+              </Button>
+            </SettingRow>
+
+            <SettingRow label="开发者模式" description="右键打开开发者工具，用于调试">
+              <Switch checked={devMode} onCheckedChange={handleToggleDevMode} />
+            </SettingRow>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )

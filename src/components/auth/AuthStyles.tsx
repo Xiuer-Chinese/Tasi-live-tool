@@ -12,33 +12,34 @@ export const AUTH_BG_GRADIENT = 'linear-gradient(135deg, #1e293b 0%, #0f172a 100
 
 // 卡片样式
 export const AUTH_CARD_CLASSES =
-  'w-full max-w-[420px] bg-gray-800/90 backdrop-blur-lg rounded-[24px] shadow-2xl p-7 border border-gray-700/50'
+  'w-full max-w-[26.25rem] bg-gray-800/90 backdrop-blur-lg rounded-3xl shadow-2xl p-7 border border-gray-700/50'
 
 // 标题样式
-export const AUTH_TITLE_CLASSES = 'text-[28px] font-semibold text-white mb-1'
-export const AUTH_SUBTITLE_CLASSES = 'text-[14px] text-gray-400'
+export const AUTH_TITLE_CLASSES = 'text-[1.75rem] font-semibold text-white mb-1'
+export const AUTH_SUBTITLE_CLASSES = 'text-sm text-gray-400'
 
 // 输入框样式
 export const AUTH_INPUT_CLASSES =
-  'h-[46px] rounded-[14px] bg-gray-700/50 border-gray-600 text-white text-[15px] placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/30'
+  'h-[2.875rem] rounded-[0.875rem] bg-gray-700/50 border-gray-600 text-white text-[0.9375rem] placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/30'
 export const AUTH_INPUT_WITH_ICON_CLASSES =
-  'h-[46px] rounded-[14px] bg-gray-700/50 border-gray-600 text-white text-[15px] pr-12 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/30'
+  'h-[2.875rem] rounded-[0.875rem] bg-gray-700/50 border-gray-600 text-white text-[0.9375rem] pr-12 placeholder:text-gray-500 focus:border-primary focus:ring-2 focus:ring-primary/30'
 
 // Label 样式
-export const AUTH_LABEL_CLASSES = 'text-[14px] font-medium text-gray-300'
+export const AUTH_LABEL_CLASSES = 'text-sm font-medium text-gray-300'
 
 // 按钮样式
 export const AUTH_BUTTON_CLASSES =
-  'w-full h-[50px] rounded-[16px] text-[15px] font-medium bg-primary hover:bg-primary/90'
+  'w-full h-[3.125rem] rounded-[1rem] text-[0.9375rem] font-medium bg-primary hover:bg-primary/90'
 
 // 错误提示样式
-export const AUTH_ERROR_CLASSES = 'mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-[14px]'
-export const AUTH_ERROR_TEXT_CLASSES = 'text-[14px] text-red-300'
+export const AUTH_ERROR_CLASSES =
+  'mb-4 p-3 bg-red-500/20 border border-red-500/30 rounded-[0.875rem]'
+export const AUTH_ERROR_TEXT_CLASSES = 'text-sm text-red-300'
 
 // 链接样式
 export const AUTH_LINK_CLASSES =
-  'text-blue-400 hover:text-blue-300 hover:underline text-[14px] font-medium transition-colors'
-export const AUTH_LINK_TEXT_CLASSES = 'text-[14px] text-gray-400'
+  'text-blue-400 hover:text-blue-300 hover:underline text-sm font-medium transition-colors'
+export const AUTH_LINK_TEXT_CLASSES = 'text-sm text-gray-400'
 
 // 表单间距
 export const AUTH_FORM_SPACING = 'space-y-4' // 从 space-y-5 改为 space-y-4，更紧凑

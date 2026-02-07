@@ -50,8 +50,8 @@ export default function MessageEditor({
   }
 
   return (
-    <div className="min-h-[80px]">
-      <div className="border rounded flex min-h-[80px]">
+    <div className="min-h-[5rem]">
+      <div className="border rounded flex min-h-[5rem]">
         <div className="bg-muted text-right px-1 py-0.5 font-mono text-muted-foreground select-none text-xs shrink-0">
           {localMessages.map((msg, i) => (
             <button

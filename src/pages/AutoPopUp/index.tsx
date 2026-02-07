@@ -1,7 +1,5 @@
 import { useMemoizedFn } from 'ahooks'
 import { Title } from '@/components/common/Title'
-import { GateButton } from '@/components/GateButton'
-import { CarbonPlayFilledAlt, CarbonStopFilledAlt } from '@/components/icons/carbon'
 import { useAccounts } from '@/hooks/useAccounts'
 import { useAutoPopUpActions, useCurrentAutoPopUp, useShortcutListener } from '@/hooks/useAutoPopUp'
 import { useAutoStopOnGateLoss } from '@/hooks/useAutoStopOnGateLoss'
@@ -10,7 +8,7 @@ import { useTaskControl } from '@/hooks/useTaskControl'
 import { useGateStore } from '@/stores/gateStore'
 import { stopAllLiveTasks } from '@/utils/stopAllLiveTasks'
 import GoodsListCard from './components/GoodsListCard'
-import PopUpSettingsCard from './components/PopUpSettingsCard'
+import TaskControlCard from './components/TaskControlCard'
 
 const useAutoPopUpTaskControl = () => {
   const isRunning = useCurrentAutoPopUp(context => context.isRunning)
@@ -60,31 +58,17 @@ export default function AutoPopUp() {
   useShortcutListener()
 
   return (
-    <div className="h-full min-h-0 w-full flex flex-col overflow-hidden py-0">
-      <div className="flex shrink-0 items-center justify-between mb-2">
+    <div className="w-full py-6 flex flex-col gap-6 min-h-0 overflow-auto">
+      <div className="shrink-0">
         <Title title="自动弹窗" description="配置自动弹出商品的规则" />
-        <GateButton gate={gate} onClick={handleTaskButtonClick} size="sm">
-          {isRunning ? (
-            <>
-              <CarbonStopFilledAlt className="mr-1.5 h-3.5 w-3.5" />
-              停止任务
-            </>
-          ) : (
-            <>
-              <CarbonPlayFilledAlt className="mr-1.5 h-3.5 w-3.5" />
-              开始任务
-            </>
-          )}
-        </GateButton>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 flex-1 min-h-0 min-w-0">
-        <div className="min-h-0 min-w-0 flex flex-col overflow-y-auto">
-          <GoodsListCard />
-        </div>
-        <div className="min-w-0 flex flex-col shrink-0 lg:shrink-0">
-          <PopUpSettingsCard />
-        </div>
+      <div className="flex flex-col gap-6 min-w-0 flex-1 min-h-0">
+        {/* 任务控制卡片（包含弹窗间隔、随机弹窗） */}
+        <TaskControlCard isRunning={isRunning} gate={gate} onStartStop={handleTaskButtonClick} />
+
+        {/* 商品列表卡片 */}
+        <GoodsListCard />
       </div>
     </div>
   )

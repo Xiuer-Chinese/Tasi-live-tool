@@ -217,7 +217,7 @@ function ReplyMessageManager({
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
 
-      <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
+      <div className="space-y-2 max-h-[12.5rem] overflow-y-auto border rounded-md p-2">
         {messages.length === 0 ? (
           <div className="text-sm text-center py-4 text-muted-foreground">暂无消息</div>
         ) : (

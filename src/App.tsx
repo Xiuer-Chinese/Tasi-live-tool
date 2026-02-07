@@ -255,18 +255,14 @@ function AppContent() {
               <Sidebar />
 
               <main
-                className="min-h-0 flex-1 flex flex-col overflow-hidden"
+                className="min-h-0 flex-1 flex flex-col overflow-hidden p-6"
                 style={{
                   backgroundColor: 'var(--content-bg)',
-                  borderTopLeftRadius: '16px',
+                  borderTopLeftRadius: '1rem',
                   boxShadow: 'var(--content-edge-shadow)',
-                  paddingTop: '24px',
-                  paddingBottom: '24px',
-                  paddingLeft: '24px',
-                  paddingRight: '24px',
                 }}
               >
-                <div className="mx-auto w-full max-w-5xl flex flex-col flex-1 min-h-0 overflow-hidden">
+                <div className="mx-auto w-full max-w-full xl:max-w-7xl 2xl:max-w-screen-2xl flex flex-col flex-1 min-h-0 overflow-hidden">
                   <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                     <Suspense
                       fallback={
@@ -291,7 +287,7 @@ function AppContent() {
             <div
               className={cn(
                 'shrink-0 transition-all duration-200',
-                logCollapsed ? 'h-12 shadow-none opacity-50' : 'h-[180px] opacity-100',
+                logCollapsed ? 'h-12 shadow-none opacity-50' : 'h-[11.25rem] opacity-100',
               )}
               style={{
                 backgroundColor: logCollapsed ? 'var(--surface-muted)' : 'var(--surface)',

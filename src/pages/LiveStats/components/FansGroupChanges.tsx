@@ -48,7 +48,7 @@ export default function FansGroupChanges() {
       </CardHeader>
 
       <CardContent className="flex-1 p-0 min-h-0">
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[25rem]">
           <div className="py-2 px-4">
             {fansClubChanges.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">

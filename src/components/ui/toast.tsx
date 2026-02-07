@@ -12,7 +12,7 @@ const ToastViewport = ({
 }: React.ComponentProps<typeof ToastPrimitives.Viewport>) => (
   <ToastPrimitives.Viewport
     className={cn(
-      'fixed top-0 left-1/2 -translate-x-1/2 z-100 flex max-h-screen w-[420px] flex-col p-4',
+      'fixed top-0 left-1/2 -translate-x-1/2 z-100 flex max-h-screen w-[26.25rem] flex-col p-4',
       className,
     )}
     {...props}

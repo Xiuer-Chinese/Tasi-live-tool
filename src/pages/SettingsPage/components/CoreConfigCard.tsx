@@ -1,5 +1,13 @@
 import { useMemoizedFn } from 'ahooks'
-import { EraserIcon, FolderSearchIcon, SearchIcon, TrashIcon } from 'lucide-react'
+import {
+  EraserIcon,
+  FolderSearchIcon,
+  Globe,
+  SearchIcon,
+  ShieldAlert,
+  TrashIcon,
+  User,
+} from 'lucide-react'
 import { useId, useState } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
 import { SimpleIconsGooglechrome, SimpleIconsMicrosoftedge } from '@/components/icons/simpleIcons'
@@ -91,126 +99,169 @@ export function CoreConfigCard() {
   })
 
   return (
-    <Card className="p-4 pt-3">
-      <CardHeader className="p-0 pb-2">
-        <CardTitle className="text-sm">核心配置</CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-muted/50 px-6 py-4">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Globe className="h-4 w-4 text-primary" />
+          核心配置
+        </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1 p-0 pt-0">
-        {/* 浏览器：检测 + Edge 同一行；路径 + 浏览同一行 */}
-        <div className="space-y-2 py-2">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-2">
+      <CardContent className="p-6 space-y-6">
+        {/* 浏览器设置分组 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="h-4 w-1 rounded-full bg-primary" />
+            浏览器设置
+          </div>
+
+          <div className="pl-3 space-y-4">
+            {/* 检测按钮和 Edge 优先 */}
+            <div className="flex items-center gap-4 flex-wrap">
               <Button
                 variant="default"
                 size="sm"
                 onClick={handleAutoDetect}
                 disabled={isDetecting}
-                className="h-8"
+                className="h-9"
               >
-                <SearchIcon className={`mr-1.5 h-3.5 w-3.5 ${isDetecting ? 'animate-spin' : ''}`} />
-                {isDetecting ? '检测中' : '开始检测'}
+                <SearchIcon className={`mr-2 h-4 w-4 ${isDetecting ? 'animate-spin' : ''}`} />
+                {isDetecting ? '检测中...' : '自动检测'}
               </Button>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <Switch id={edgeFirstId} checked={edgeFirst} onCheckedChange={setEdgeFirst} />
-                <Label htmlFor={edgeFirstId} className="text-xs text-muted-foreground">
-                  优先 Edge
+                <Label
+                  htmlFor={edgeFirstId}
+                  className="text-sm text-muted-foreground cursor-pointer"
+                >
+                  优先使用 Edge
                 </Label>
               </div>
             </div>
+
+            {/* 路径输入和浏览 */}
+            <div className="flex gap-3 items-center">
+              <Input
+                value={path}
+                onChange={e => setPath(e.target.value)}
+                placeholder="浏览器可执行文件路径"
+                className="font-mono text-sm h-10 flex-1 min-w-0"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 shrink-0 px-4"
+                onClick={handleSelectChrome}
+              >
+                <FolderSearchIcon className="mr-2 h-4 w-4" />
+                浏览
+              </Button>
+            </div>
+
+            {/* 支持的浏览器提示 */}
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+              <span>支持：</span>
+              <span className="flex items-center gap-1">
+                <SimpleIconsGooglechrome className="w-3.5 h-3.5" />
+                Chrome
+              </span>
+              <span className="text-muted-foreground/50">|</span>
+              <span className="flex items-center gap-1">
+                <SimpleIconsMicrosoftedge className="w-3.5 h-3.5" />
+                Edge
+              </span>
+            </div>
           </div>
-          <div className="flex gap-2 items-center">
-            <Input
-              value={path}
-              onChange={e => setPath(e.target.value)}
-              placeholder="浏览器路径"
-              className="font-mono text-xs h-8 flex-1 min-w-0"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 shrink-0"
-              onClick={handleSelectChrome}
-            >
-              <FolderSearchIcon className="mr-1 h-3.5 w-3.5" />
-              浏览
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            请选择 <SimpleIconsGooglechrome className="w-3 h-3 inline mx-0.5" /> chrome.exe
-            <span className="mx-1">|</span>
-            <SimpleIconsMicrosoftedge className="w-3 h-3 inline mx-0.5" /> msedge.exe
-          </p>
         </div>
 
-        <SettingRow label="重置登录状态" description="清除已保存登录信息，下次需重新登录">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" className="h-8">
-                <EraserIcon className="mr-1 h-3.5 w-3.5" />
-                重置
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>确认重置登录状态？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  将清除已保存的登录信息，下次启动需重新登录。无法撤销。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>取消</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleCookiesReset}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  确认
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </SettingRow>
+        {/* 分隔线 */}
+        <div className="h-px bg-border" />
 
-        <SettingRow label="清除本地登录数据" description="清除 token、记住登录等，登录框将为空">
-          <ClearLocalLoginButton />
-        </SettingRow>
+        {/* 账号管理分组 */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <div className="h-4 w-1 rounded-full bg-primary" />
+            账号管理
+          </div>
 
-        <SettingRow
-          label="删除账号"
-          description={currentAccount ? `当前：${currentAccount.name}` : undefined}
-        >
-          {!isDefaultAccount ? (
-            isConnected ? (
-              <Button variant="destructive" size="sm" className="h-8" disabled>
-                请先断开中控台
-              </Button>
-            ) : (
-              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <div className="pl-3 space-y-3">
+            <SettingRow label="重置登录状态" description="清除已保存的登录信息，下次需重新登录">
+              <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="h-8">
-                    <TrashIcon className="mr-1 h-3.5 w-3.5" />
-                    删除
+                  <Button variant="outline" size="sm" className="h-9">
+                    <EraserIcon className="mr-2 h-4 w-4" />
+                    重置
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>确认删除该账号配置？</AlertDialogTitle>
+                    <AlertDialogTitle>确认重置登录状态？</AlertDialogTitle>
                     <AlertDialogDescription>
-                      请确保该账号任务已停止，以免造成未知错误。
+                      将清除已保存的登录信息，下次启动需重新登录。此操作无法撤销。
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>取消</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAccount}>确认</AlertDialogAction>
+                    <AlertDialogAction
+                      onClick={handleCookiesReset}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      确认重置
+                    </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-            )
-          ) : (
-            <Button size="sm" className="h-8" disabled>
-              默认账号不可删
-            </Button>
-          )}
-        </SettingRow>
+            </SettingRow>
+
+            <SettingRow label="清除本地数据" description="清除 token、记住登录等，登录框将为空">
+              <ClearLocalLoginButton />
+            </SettingRow>
+
+            <SettingRow
+              label="删除当前账号"
+              description={currentAccount ? `当前账号：${currentAccount.name}` : '无账号'}
+            >
+              {!isDefaultAccount ? (
+                isConnected ? (
+                  <Button variant="outline" size="sm" className="h-9" disabled>
+                    <ShieldAlert className="mr-2 h-4 w-4" />
+                    请先断开连接
+                  </Button>
+                ) : (
+                  <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" className="h-9">
+                        <TrashIcon className="mr-2 h-4 w-4" />
+                        删除账号
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>确认删除该账号？</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          账号删除后无法恢复，请确保该账号的任务已停止。
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>取消</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteAccount}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          确认删除
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )
+              ) : (
+                <Button variant="outline" size="sm" className="h-9" disabled>
+                  <ShieldAlert className="mr-2 h-4 w-4" />
+                  默认账号不可删
+                </Button>
+              )}
+            </SettingRow>
+          </div>
+        </div>
       </CardContent>
     </Card>
   )
@@ -235,7 +286,8 @@ function ClearLocalLoginButton() {
     }
   }
   return (
-    <Button variant="outline" size="sm" className="h-8" onClick={handleClear}>
+    <Button variant="outline" size="sm" className="h-9" onClick={handleClear}>
+      <EraserIcon className="mr-2 h-4 w-4" />
       清除
     </Button>
   )

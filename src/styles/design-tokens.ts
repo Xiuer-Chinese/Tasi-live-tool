@@ -162,7 +162,7 @@ export const designTokens = {
       medium: 'max-w-md',
       large: 'max-w-lg',
       xlarge: 'max-w-xl',
-      auth: 'max-w-[420px]',
+      auth: 'max-w-[26.25rem]',
     },
     layout: {
       header: 'h-16',
@@ -232,6 +232,6 @@ export const designTokensClasses = {
   modal: {
     backdrop:
       'fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4',
-    container: 'w-full max-w-[420px] bg-white rounded-2xl shadow-xl p-6',
+    container: 'w-full max-w-[26.25rem] bg-white rounded-2xl shadow-xl p-6',
   },
 } as const

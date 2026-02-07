@@ -98,8 +98,8 @@ export default function AutoReply() {
   })
 
   const connectState = useCurrentLiveControl(context => context.connectState)
-  const platform = connectState.platform as string
-  if (!autoReplyPlatforms.includes(platform)) {
+  const platform = connectState.platform
+  if (!autoReplyPlatforms.includes(platform as LiveControlPlatform)) {
     return null
   }
 

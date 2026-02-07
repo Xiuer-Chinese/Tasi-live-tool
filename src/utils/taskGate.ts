@@ -2,6 +2,7 @@
  * 任务运行守门人机制
  * 统一管理所有直播相关任务的运行前置条件
  */
+import type { StreamStatus } from 'shared/streamStatus'
 
 export type TaskStopReason =
   | 'disconnected'
@@ -31,6 +32,11 @@ const TASK_NAMES: Record<string, string> = {
   'auto-popup': '自动弹窗',
 }
 
+interface TaskGateContext {
+  status: string
+  streamState?: StreamStatus
+}
+
 /**
  * 检查是否可以启动任务（统一前置校验）
  *
@@ -39,7 +45,7 @@ const TASK_NAMES: Record<string, string> = {
  * @returns TaskStartCheckResult
  */
 export function ensureCanStartTask(
-  connectState: { status: string },
+  connectState: TaskGateContext,
   taskName: 'auto-reply' | 'auto-comment' | 'auto-popup',
 ): TaskStartCheckResult {
   const displayName = TASK_NAMES[taskName] || taskName
@@ -70,16 +76,22 @@ export function ensureCanStartTask(
     }
   }
 
-  // TODO: 前置条件2：直播状态检查（streamStatus === 'live'）
-  // 当前暂不支持直播状态检测，后续可以添加
-  // if (streamState !== 'live') {
-  //   return {
-  //     ok: false,
-  //     reason: 'NOT_LIVE',
-  //     message: `当前未开播\n请先开播，再启动【${displayName}】`,
-  //     action: 'GO_LIVE'
-  //   }
-  // }
+  // 前置条件2：直播状态检查（streamStatus === 'live'）
+  const streamState = connectState.streamState ?? 'unknown'
+  if (streamState !== 'live') {
+    const stateMessages: Record<StreamStatus, string> = {
+      unknown: '直播状态未知',
+      offline: '当前未开播',
+      live: '直播中',
+      ended: '直播已结束',
+    }
+    return {
+      ok: false,
+      reason: 'NOT_LIVE',
+      message: `${stateMessages[streamState]}\n请先开播，再启动【${displayName}】`,
+      action: 'GO_LIVE',
+    }
+  }
 
   // TODO: 前置条件3：登录状态检查（authState !== 'invalid'）
   // if (authState === 'invalid') {

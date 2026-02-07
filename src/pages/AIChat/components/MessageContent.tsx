@@ -6,7 +6,7 @@ import 'highlight.js/styles/vs.css'
 
 export function MessageContent({ content }: { content: string }) {
   return (
-    <div className="whitespace-normal leading-relaxed text-[15px]">
+    <div className="whitespace-normal leading-relaxed text-[0.9375rem]">
       <div className="markdown-body">
         <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
           {content}

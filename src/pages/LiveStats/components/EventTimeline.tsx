@@ -190,7 +190,7 @@ export default function EventTimeline() {
       </CardHeader>
 
       <CardContent className="flex-1 p-0 min-h-0">
-        <ScrollArea className="h-[360px]">
+        <ScrollArea className="h-[22.5rem]">
           <div className="py-2 space-y-0.5 px-4">
             {filteredEvents.length === 0 ? (
               <div className="flex items-center justify-center h-32 text-muted-foreground">

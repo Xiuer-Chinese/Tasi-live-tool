@@ -2,6 +2,7 @@ import { useMemoizedFn } from 'ahooks'
 import { CheckIcon, CircleAlert, CircleDot, GlobeIcon, Loader2, XIcon } from 'lucide-react'
 import React, { useEffect, useRef, useState } from 'react'
 import { IPC_CHANNELS } from 'shared/ipcChannels'
+import { OneClickStartButton } from '@/components/common/OneClickStartButton'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -63,16 +64,19 @@ const StatusAlert = React.memo(() => {
 })
 
 const StatusCard = React.memo(() => {
+  const connectState = useCurrentLiveControl(context => context.connectState)
+  const isConnected = connectState.status === 'connected'
+
   return (
     <Card className="flex flex-1 flex-col min-h-0">
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 shrink-0">
+      <CardHeader className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center justify-between gap-3 shrink-0">
         <div className="min-w-0 space-y-1">
           <CardTitle className="text-base">控制台状态</CardTitle>
-          <CardDescription>查看并管理直播控制台的连接状态</CardDescription>
         </div>
-        <div className="flex shrink-0 items-center gap-3 flex-wrap">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <PlatformSelect />
           <ConnectToLiveControl prominent />
+          <OneClickStartButton />
           <HeadlessSetting />
         </div>
       </CardHeader>
@@ -395,7 +399,7 @@ const ConnectToLiveControl = React.memo((props?: { prominent?: boolean }) => {
       size={prominent ? 'lg' : 'default'}
       className={
         prominent
-          ? 'min-w-[220px] h-12 text-base font-semibold shadow-md'
+          ? 'min-w-[13.75rem] h-12 text-base font-semibold shadow-md'
           : connectState.status !== 'connected'
             ? 'font-medium text-sm'
             : undefined
@@ -453,17 +457,9 @@ const ConnectState = React.memo((props: { right?: React.ReactNode } = {}) => {
   const { right } = props
   const connectState = useCurrentLiveControl(context => context.connectState)
   const accountName = useCurrentLiveControl(context => context.accountName)
-  const statusText =
-    connectState.status === 'connected'
-      ? `已连接${accountName ? ` (${accountName})` : ''}`
-      : connectState.status === 'connecting'
-        ? '连接中'
-        : connectState.status === 'error'
-          ? '连接失败'
-          : '未连接'
   const statusLabel =
     connectState.status === 'connected'
-      ? '运行中'
+      ? '已连接'
       : connectState.status === 'connecting'
         ? '连接中'
         : connectState.status === 'error'
@@ -484,12 +480,6 @@ const ConnectState = React.memo((props: { right?: React.ReactNode } = {}) => {
     <div className="flex items-center gap-4 rounded-lg border bg-muted/20 p-4">
       {indicator}
       <div className="min-w-0 flex-1">
-        <div
-          className="text-xl font-semibold leading-tight"
-          style={{ color: 'var(--text-primary)' }}
-        >
-          {statusText}
-        </div>
         <Badge
           variant={
             connectState.status === 'connected'

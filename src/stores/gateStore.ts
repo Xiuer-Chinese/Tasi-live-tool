@@ -63,7 +63,7 @@ export const useGateStore = create<GateStore>()(
       guardAction: async (actionName: string, options: GuardActionOptions) => {
         const { requireSubscription = false } = options
         const pendingFn = options.action != null ? options.action : null
-        const { isAuthenticated, userStatus } = useAuthStore.getState()
+        const { isAuthenticated, refreshUserStatus } = useAuthStore.getState()
 
         if (!isAuthenticated) {
           get().setPendingAction(pendingFn, actionName)
@@ -72,6 +72,10 @@ export const useGateStore = create<GateStore>()(
           )
           return
         }
+
+        // 先刷新用户状态确保最新（特别是试用状态）
+        await refreshUserStatus()
+        const { userStatus } = useAuthStore.getState()
 
         if (userStatus?.status === 'disabled') {
           window.dispatchEvent(new CustomEvent('auth:account-disabled', { detail: { actionName } }))

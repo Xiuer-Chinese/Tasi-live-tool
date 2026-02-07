@@ -145,6 +145,27 @@ export class AccountSession {
   }
 
   private formatConnectError(error: unknown) {
+    // 处理浏览器被关闭的情况
+    if (error instanceof Error) {
+      const errorMessage = error.message || error.name || ''
+      // 浏览器被用户关闭
+      if (
+        errorMessage.includes('Target page, context or browser has been closed') ||
+        errorMessage.includes('browser has been closed') ||
+        errorMessage.includes('page has been closed')
+      ) {
+        return '浏览器已被关闭，连接已取消'
+      }
+      // 连接超时
+      if (errorMessage.includes('timeout') || errorMessage.includes('Timeout')) {
+        return '连接超时，请检查网络后重试'
+      }
+      // 导航失败
+      if (errorMessage.includes('net::') || errorMessage.includes('Navigation failed')) {
+        return '网络连接失败，请检查网络后重试'
+      }
+    }
+
     const baseMessage =
       error instanceof Error
         ? error.message || error.name

@@ -31,6 +31,7 @@ export function SubscribeDialog({
 }: SubscribeDialogProps) {
   const { runPendingActionAndClear } = useGateStore()
   const startTrialAndRefresh = useAuthStore(s => s.startTrialAndRefresh)
+  const refreshUserStatus = useAuthStore(s => s.refreshUserStatus)
   const [loading, setLoading] = useState(false)
   const [trialError, setTrialError] = useState<string | null>(null)
 
@@ -40,6 +41,8 @@ export function SubscribeDialog({
     try {
       const result = await startTrialAndRefresh()
       if (result.success) {
+        // 确保 userStatus 已更新，再次刷新获取最新状态
+        await refreshUserStatus()
         onClose()
         runPendingActionAndClear()
         return

@@ -165,7 +165,7 @@ export function UpdateDialog() {
         <div className={`flex mt-4 ${isCustom ? 'flex-col gap-4' : 'justify-between gap-2'}`}>
           <div className={`${isCustom ? 'w-full flex space-x-4' : ''}`}>
             <Select value={updateSource} onValueChange={value => setUpdateSource(value)}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-[8.75rem]">
                 <SelectValue placeholder="选择更新源" />
               </SelectTrigger>
               <SelectContent>
@@ -182,7 +182,7 @@ export function UpdateDialog() {
                   value={customUpdateSource}
                   onChange={e => setCustomUpdateSource(e.target.value)}
                   placeholder="请输入自定义更新源地址"
-                  className="max-w-[400px]"
+                  className="max-w-[25rem]"
                 />
                 <p className="text-xs text-muted-foreground">
                   请输入完整的URL地址，如：https://gh-proxy.com/

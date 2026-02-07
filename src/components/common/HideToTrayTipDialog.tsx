@@ -30,7 +30,7 @@ export function HideToTrayTipDialog({ open, onOpenChange }: HideToTrayTipDialogP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[26.5rem]">
         <DialogHeader>
           <DialogTitle>已最小化到托盘</DialogTitle>
           <DialogDescription className="pt-2">

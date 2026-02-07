@@ -108,12 +108,8 @@ export class DevPlatform implements IPlatform, IPerformComment, IPerformPopup, I
       this.documentWritten = true
     }
     const isConnect = await Promise.race([
-      browserSession.page
-        .waitForSelector('.top-nav')
-        .then(() => true), // 中控台
-      browserSession.page
-        .waitForSelector('.login-form__btn-submit')
-        .then(() => false), // 登录
+      browserSession.page.waitForSelector('.top-nav').then(() => true), // 中控台
+      browserSession.page.waitForSelector('.login-form__btn-submit').then(() => false), // 登录
     ])
     if (isConnect) {
       this.mainPage = browserSession.page

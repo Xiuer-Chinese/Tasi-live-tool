@@ -1,4 +1,4 @@
-export function Title({ title, description }: { title: string; description: string }) {
+export function Title({ title, description }: { title: string; description?: string }) {
   return (
     <div className="mb-2">
       <h1
@@ -7,9 +7,11 @@ export function Title({ title, description }: { title: string; description: stri
       >
         {title}
       </h1>
-      <p className="mt-0.5 text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>
-        {description}
-      </p>
+      {description && (
+        <p className="mt-0.5 text-xs leading-snug" style={{ color: 'var(--text-muted)' }}>
+          {description}
+        </p>
+      )}
     </div>
   )
 }

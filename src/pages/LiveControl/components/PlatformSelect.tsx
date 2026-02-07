@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useCurrentLiveControl, useCurrentLiveControlActions } from '@/hooks/useLiveControl'
-import { useGateStore } from '@/stores/gateStore'
 
 const basePlatforms: Record<string, string> = {
   douyin: '抖音小店',
@@ -29,21 +28,10 @@ const PlatformSelect = React.memo((props: { fullWidth?: boolean } = {}) => {
   const { fullWidth } = props
   const connectState = useCurrentLiveControl(context => context.connectState)
   const { setPlatform } = useCurrentLiveControlActions()
-  const guardAction = useGateStore(s => s.guardAction)
 
   const handlePlatformChange = useMemoizedFn((newPlatform: string) => {
-    if (newPlatform === 'dev') {
-      console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
-      setPlatform(newPlatform)
-      return
-    }
-    guardAction('platform-switch', {
-      requireSubscription: true,
-      action: () => {
-        console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
-        setPlatform(newPlatform)
-      },
-    })
+    console.log('[Platform Select] Platform changed:', connectState.platform, '→', newPlatform)
+    setPlatform(newPlatform)
   })
 
   return (
@@ -56,7 +44,7 @@ const PlatformSelect = React.memo((props: { fullWidth?: boolean } = {}) => {
         className={
           fullWidth
             ? 'w-full border-border/30 bg-muted/30 text-muted-foreground text-sm'
-            : 'w-[140px] border-border/30 bg-muted/30 text-muted-foreground opacity-60 hover:opacity-80 transition-opacity text-sm'
+            : 'w-[8.75rem] border-border/30 bg-muted/30 text-muted-foreground opacity-60 hover:opacity-80 transition-opacity text-sm'
         }
       >
         <SelectValue placeholder="选择平台" />

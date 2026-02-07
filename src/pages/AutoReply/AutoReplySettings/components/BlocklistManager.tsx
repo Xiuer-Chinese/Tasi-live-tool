@@ -30,7 +30,7 @@ export function BlocklistManager() {
         <p className="text-sm text-muted-foreground">屏蔽列表中的用户将不会被自动回复</p>
       </div>
 
-      <div className="space-y-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
+      <div className="space-y-2 max-h-[12.5rem] overflow-y-auto border rounded-md p-2">
         {blockedUsers.length === 0 ? (
           <div className="text-sm text-center py-4 text-muted-foreground">暂无屏蔽用户</div>
         ) : (

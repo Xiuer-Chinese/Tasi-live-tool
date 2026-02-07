@@ -31,7 +31,7 @@ export const Header = memo(function Header() {
 
   return (
     <header
-      className="w-full px-6 flex min-h-[60px] h-[60px] shrink-0 items-center justify-between relative z-10"
+      className="w-full px-6 flex min-h-[3.75rem] h-[3.75rem] shrink-0 items-center justify-between relative z-10"
       style={{
         backgroundColor: 'var(--header-bg)',
         boxShadow: 'var(--header-top-shadow), var(--header-separator)',
@@ -85,7 +85,7 @@ export const Header = memo(function Header() {
             }}
           >
             <User className="h-4 w-4" />
-            <span className="text-sm font-medium truncate max-w-[120px]">{user.username}</span>
+            <span className="text-sm font-medium truncate max-w-[7.5rem]">{user.username}</span>
           </button>
         ) : (
           <button

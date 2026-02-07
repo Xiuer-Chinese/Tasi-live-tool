@@ -16,9 +16,7 @@ export default function ForgotPassword() {
       <AuthCard>
         <AuthHeader title="忘记密码" subtitle="功能开发中" />
         <div className="space-y-4">
-          <p className="text-center text-gray-400 text-[14px]">
-            找回密码功能正在开发中，敬请期待。
-          </p>
+          <p className="text-center text-gray-400 text-sm">找回密码功能正在开发中，敬请期待。</p>
           <div className="flex justify-center gap-3 pt-3">
             <Button
               variant="outline"

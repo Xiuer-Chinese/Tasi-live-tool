@@ -82,9 +82,9 @@ function UserMessage({
         className="max-w-[80%] rounded-lg px-4 py-2 break-words shadow-sm bg-primary text-primary-foreground"
         style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
       >
-        <div className="whitespace-pre-wrap leading-relaxed text-[15px]">{content}</div>
+        <div className="whitespace-pre-wrap leading-relaxed text-[0.9375rem]">{content}</div>
         <div className="absolute -bottom-5 select-none right-1">
-          <span className="text-[11px] text-primary/70">
+          <span className="text-[0.6875rem] text-primary/70">
             {new Date(timestamp).toLocaleTimeString()}
           </span>
         </div>
@@ -112,15 +112,15 @@ function AssistantMessage({
         }`}
         style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}
       >
-        <div className="whitespace-pre-wrap leading-relaxed text-[15px]">
+        <div className="whitespace-pre-wrap leading-relaxed text-[0.9375rem]">
           {reasoning_content && (
-            <p className="text-muted-foreground text-[13px]">{reasoning_content}</p>
+            <p className="text-muted-foreground text-[0.8125rem]">{reasoning_content}</p>
           )}
           {reasoning_content && content && <Separator className="my-2" />}
           <MessageContent content={content} />
         </div>
         <div className="absolute -bottom-5 select-none  left-1">
-          <span className="text-[11px] text-muted-foreground/70">
+          <span className="text-[0.6875rem] text-muted-foreground/70">
             {new Date(timestamp).toLocaleTimeString()}
           </span>
         </div>

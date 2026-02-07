@@ -261,7 +261,7 @@ export function AuthDialog({ isOpen, onClose, feature }: AuthDialogProps) {
   return (
     <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div
-        className="w-full max-w-[420px] bg-white rounded-xl border border-[hsl(var(--border))] p-6"
+        className="w-full max-w-[26.25rem] bg-white rounded-xl border border-[hsl(var(--border))] p-6"
         style={{ boxShadow: 'var(--shadow-card)' }}
       >
         {/* Header */}

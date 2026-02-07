@@ -62,7 +62,7 @@ export function AIReplySetting() {
             placeholder="输入AI提示词..."
             value={config.comment.aiReply.prompt}
             onChange={e => updateAIReplySettings({ prompt: e.target.value })}
-            className="min-h-[120px]"
+            className="min-h-[7.5rem]"
           />
           <p className="text-xs text-muted-foreground">提示词将指导AI如何回复用户评论</p>
           <div className="flex justify-between items-center space-x-2">

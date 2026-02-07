@@ -80,8 +80,8 @@ export function useLiveFeatureGate(): LiveFeatureGate {
         action = 'GO_LIVE'
       }
     }
+    // 前置条件2已完成：直播状态检查
     // TODO: 前置条件3：登录状态检查（authState !== 'invalid'）
-    // 当前暂不支持登录状态检测，后续可以添加
     // else if (authState === 'invalid') {
     //   reason = 'AUTH_LOST'
     //   message = '登录已失效，请重新扫码登录'

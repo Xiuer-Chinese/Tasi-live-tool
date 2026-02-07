@@ -44,7 +44,7 @@ const PresetModelSelector = memo(
             <SelectValue placeholder="选择模型" />
           </SelectTrigger>
           <SelectContent>
-            <ScrollArea className="h-[200px]">
+            <ScrollArea className="h-[12.5rem]">
               {providers[provider].models.map(model => (
                 <SelectItem key={model} value={model}>
                   {model}
@@ -326,7 +326,7 @@ export function APIKeyDialog() {
 
   const dialogContent = useMemo(
     () => (
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[26.5rem]">
         <DialogHeader>
           <DialogTitle>API Key 配置</DialogTitle>
           <DialogDescription className="py-1">选择并配置您想要使用的 AI 提供商。</DialogDescription>

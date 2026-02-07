@@ -44,7 +44,7 @@ export default function ChatInput({
         onChange={e => setInput(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder="输入消息，按 Enter 发送..."
-        className="resize-none flex-1 min-h-[56px] max-h-[200px] bg-muted/50 focus:bg-background transition-colors"
+        className="resize-none flex-1 min-h-[3.5rem] max-h-[12.5rem] bg-muted/50 focus:bg-background transition-colors"
         rows={3}
       />
       <Button

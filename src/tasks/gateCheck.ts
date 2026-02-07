@@ -51,8 +51,8 @@ export function gateCanRun(
     }
   }
 
+  // 前置条件2已完成：直播状态检查
   // TODO: 前置条件3：登录状态检查（authState !== 'invalid'）
-  // 当前暂不支持登录状态检测，后续可以添加
 
   return { ok: true }
 }

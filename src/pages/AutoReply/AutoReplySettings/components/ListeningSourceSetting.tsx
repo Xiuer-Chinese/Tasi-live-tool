@@ -26,7 +26,7 @@ export function ListeningSourceSetting() {
   const { updateGeneralSettings, config } = useAutoReplyConfig()
   const { toast } = useToast()
   const connectState = useCurrentLiveControl(context => context.connectState)
-  const platform = connectState.platform as any
+  const platform = connectState.platform as LiveControlPlatform
   const { entry: listeningSource } = config
 
   const listeningSourceTips = useMemo(() => {
@@ -49,13 +49,11 @@ export function ListeningSourceSetting() {
           <SelectValue placeholder="选择监听来源" />
         </SelectTrigger>
         <SelectContent>
-          {(platformListeningSources[platform as keyof typeof platformListeningSources] ?? []).map(
-            (source: any) => (
-              <SelectItem key={source} value={source}>
-                {(listeningSourceNameMap as any)[source]}监听
-              </SelectItem>
-            ),
-          )}
+          {(platformListeningSources[platform] ?? []).map(source => (
+            <SelectItem key={source} value={source}>
+              {listeningSourceNameMap[source]}监听
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
       <p className="text-xs text-muted-foreground">{listeningSourceTips}</p>
